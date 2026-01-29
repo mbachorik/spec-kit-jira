@@ -1,0 +1,53 @@
+# Jira Integration Configuration
+# Copy this to jira-config.yml and customize for your project
+
+# Jira Project Configuration
+project:
+  # Jira project key (e.g., "MSATS", "DEVTEST")
+  key: ""
+
+# Issue Hierarchy Configuration
+hierarchy:
+  # Type of issue to create for tasks (default: "subtask")
+  # Options: "subtask", "task", "story"
+  issue_type: "subtask"
+
+  # Link type to use for relationships (default: "Relates")
+  # Options: "Relates", "Blocks", "Implements"
+  link_type: "Relates"
+
+# Default Values for Issue Creation
+defaults:
+  # Epic defaults
+  epic:
+    labels: []
+    # Custom fields for epic (discover with /speckit.jira.discover-fields)
+    custom_fields: {}
+
+  # Story defaults
+  story:
+    labels: []
+    custom_fields: {}
+
+  # Task/Subtask defaults
+  task:
+    labels: []
+    custom_fields: {}
+
+# Field Mappings (discovered via /speckit.jira.discover-fields)
+# Maps spec-kit concepts to Jira custom fields
+field_mappings:
+  # Example: Map spec version to custom field
+  # spec_version: "customfield_10001"
+
+  # Example: Map task status to custom field
+  # task_status: "customfield_10002"
+
+# MCP Server Configuration
+# The jira-mcp-server tool should be configured separately
+# See: https://github.com/your-org/jira-mcp-server
+
+# Environment Variable Overrides:
+# - SPECKIT_JIRA_PROJECT_KEY: Override project.key
+# - SPECKIT_JIRA_ISSUE_TYPE: Override hierarchy.issue_type
+# - SPECKIT_JIRA_LINK_TYPE: Override hierarchy.link_type

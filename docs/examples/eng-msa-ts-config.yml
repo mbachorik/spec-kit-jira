@@ -1,0 +1,56 @@
+# Example Jira Configuration for eng-msa-ts Project
+
+# Jira Project
+project:
+  key: "MSATS" # Microservices @ Stats Perform
+
+# Issue Hierarchy
+hierarchy:
+  # Create tasks as subtasks (grouped under epic)
+  issue_type: "subtask"
+
+  # Link type for task → epic relationship
+  link_type: "Relates"
+
+# Default Values for Issues
+defaults:
+  # Epic defaults
+  epic:
+    labels: ["spec-driven", "microservice", "typescript"]
+    custom_fields:
+      # Sprint assignment (example - use discover-fields to find actual ID)
+      # customfield_10001: "Sprint 42"
+
+      # Team assignment
+      # customfield_10004: "Platform Engineering"
+
+  # Task/Subtask defaults
+  task:
+    labels: ["implementation", "automated"]
+    custom_fields:
+      # Story points (default to 2 per task)
+      # customfield_10002: 2
+
+      # Component
+      # customfield_10003: "Backend"
+
+# Field Mappings
+# Use these to map spec-kit concepts to Jira custom fields
+field_mappings:
+  # Map spec version to custom field
+  # spec_version: "customfield_10005"
+
+  # Map implementation phase
+  # phase: "customfield_10006"
+
+# Workflow Configuration
+workflow:
+  # Status name for completed tasks
+  done_status: "Done"
+
+  # Transition name to use when marking complete
+  done_transition: "Done"
+# Notes:
+# - Run /speckit.jira.discover-fields to find custom field IDs
+# - Uncomment and customize custom_fields as needed
+# - Create jira-config.local.yml for local testing overrides

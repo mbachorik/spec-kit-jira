@@ -1,0 +1,22 @@
+# Minimal Jira Configuration Example
+
+# This is the simplest configuration - just set your project key
+# All other settings use defaults
+
+project:
+  key: "DEMO" # Replace with your Jira project key
+
+# That's it! The extension will use these defaults:
+# - hierarchy.issue_type: "subtask"
+# - hierarchy.link_type: "Relates"
+# - No labels
+# - No custom fields
+
+# Optional: Add labels to categorize issues
+defaults:
+  epic:
+    labels: ["spec-driven"]
+  task:
+    labels: ["implementation"]
+# To discover custom fields available in your Jira instance:
+# Run: /speckit.jira.discover-fields

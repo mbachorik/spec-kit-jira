@@ -1,0 +1,66 @@
+schema_version: "1.0"
+
+extension:
+  id: "jira"
+  name: "Jira Integration"
+  version: "1.0.0"
+  description: "Create Jira Epics, Stories, and Issues from spec-kit artifacts"
+  author: "Stats Perform"
+  repository: "https://github.com/statsperform/spec-kit-jira"
+  license: "MIT"
+  homepage: "https://github.com/statsperform/spec-kit-jira"
+
+requires:
+  speckit_version: ">=0.1.0"
+  tools:
+    - name: "jira-mcp-server"
+      required: true
+      version: ">=1.0.0"
+
+provides:
+  commands:
+    - name: "speckit.jira.specstoissues"
+      file: "commands/specstoissues.md"
+      description: "Create Jira hierarchy from spec and tasks"
+      aliases: ["speckit.specstoissues"]
+
+    - name: "speckit.jira.discover-fields"
+      file: "commands/discover-fields.md"
+      description: "Discover Jira custom fields for configuration"
+
+    - name: "speckit.jira.sync-status"
+      file: "commands/sync-status.md"
+      description: "Sync task completion status to Jira"
+
+  config:
+    - name: "jira-config.yml"
+      template: "jira-config.template.yml"
+      description: "Jira integration configuration"
+      required: true
+
+hooks:
+  after_tasks:
+    command: "speckit.jira.specstoissues"
+    optional: true
+    prompt: "Create Jira issues from tasks?"
+    description: "Automatically create Jira hierarchy after task generation"
+
+tags:
+  - "issue-tracking"
+  - "jira"
+  - "atlassian"
+  - "project-management"
+
+defaults:
+  project:
+    key: ""
+  hierarchy:
+    issue_type: "subtask"
+    link_type: "Relates"
+  defaults:
+    epic:
+      labels: []
+    story:
+      labels: []
+    task:
+      labels: []
