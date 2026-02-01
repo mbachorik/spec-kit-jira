@@ -18,14 +18,14 @@ hierarchy:
   # Relationships between issues
   # Options for each: "Parent", "Epic Link", "Relates", "Blocks", "Implements", "is child of", "none"
   relationships:
-    # How Story connects to Epic (default: "Epic Link" for Company-managed compatibility)
+    # How Story connects to Epic (default: "Epic Link" for Company-managed)
     epic_story: "Epic Link"
 
-    # How Task connects to Story (default: "Parent" - Task.parent = Story)
-    story_task: "Parent"
+    # How Task connects to Story (default: "Relates" for Company-managed)
+    story_task: "Relates"
 
-    # Direct Task-to-Epic link (default: "none" - Tasks link to Story, not Epic)
-    epic_task: "none"
+    # Direct Task-to-Epic link (default: "Epic Link" for Company-managed)
+    epic_task: "Epic Link"
 
 # Default Values for Issue Creation
 defaults:

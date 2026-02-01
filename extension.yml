@@ -60,8 +60,8 @@ defaults:
     task_type: "Task"
     relationships:
       epic_story: "Epic Link"
-      story_task: "Parent"
-      epic_task: "none"
+      story_task: "Relates"
+      epic_task: "Epic Link"
   defaults:
     epic:
       labels: []

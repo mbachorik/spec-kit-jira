@@ -53,8 +53,8 @@ Load the Jira configuration from `.specify/extensions/jira/jira-config.yml`:
 
 **Relationships:**
 - `hierarchy.relationships.epic_story`: How Story links to Epic (default: "Epic Link")
-- `hierarchy.relationships.story_task`: How Task links to Story (default: "Parent")
-- `hierarchy.relationships.epic_task`: Direct Task-Epic link (default: "none")
+- `hierarchy.relationships.story_task`: How Task links to Story (default: "Relates")
+- `hierarchy.relationships.epic_task`: Direct Task-Epic link (default: "Epic Link")
 
 Relationship options: `"Parent"`, `"Epic Link"`, `"Relates"`, `"Blocks"`, `"Implements"`, `"is child of"`, `"none"`
 

@@ -15,8 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Tasks: Created from task items under each Phase (`- [ ] TXXX ...`)
 - **Configurable relationships** for Team-managed and Company-managed Jira projects:
   - `hierarchy.relationships.epic_story`: How Story links to Epic (default: "Epic Link")
-  - `hierarchy.relationships.story_task`: How Task links to Story (default: "Parent")
-  - `hierarchy.relationships.epic_task`: Direct Task-Epic link (default: "none")
+  - `hierarchy.relationships.story_task`: How Task links to Story (default: "Relates")
+  - `hierarchy.relationships.epic_task`: Direct Task-Epic link (default: "Epic Link")
   - Options: "Parent", "Epic Link", "Relates", "Blocks", "Implements", "is child of", "none"
 - New hierarchy configuration options:
   - `hierarchy.epic_type`: Issue type for SPEC.md (default: "Epic")
