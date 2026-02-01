@@ -1,35 +1,50 @@
 # Jira Integration Configuration
 # Copy this to jira-config.yml and customize for your project
 
+# MCP Server Configuration
+# Name of the MCP server providing Jira tools (e.g., "atlassian", "jira-mcp-server")
+mcp_server: "atlassian"
+
 # Jira Project Configuration
 project:
   # Jira project key (e.g., "MSATS", "DEVTEST")
   key: ""
 
 # Issue Hierarchy Configuration
+# Maps spec-kit artifacts to Jira issue types:
+#   - SPEC.md → Epic
+#   - Phase headers in TASKS.md → Stories
+#   - Task items under each Phase → Tasks/Subtasks
 hierarchy:
-  # Type of issue to create for tasks (default: "subtask")
-  # Options: "subtask", "task", "story"
-  issue_type: "subtask"
+  # Issue type for the specification (from SPEC.md)
+  epic_type: "Epic"
 
-  # Link type to use for relationships (default: "Relates")
-  # Options: "Relates", "Blocks", "Implements"
+  # Issue type for phases (from ## Phase X: headers in TASKS.md)
+  story_type: "Story"
+
+  # Issue type for individual tasks (from - [ ] TXXX items in TASKS.md)
+  # Options: "Sub-task", "Task", "Story"
+  # Note: "Sub-task" creates subtasks under the Story; "Task" creates linked tasks
+  task_type: "Sub-task"
+
+  # Link type when task_type is not "Sub-task" (default: "Relates")
+  # Options: "Relates", "Blocks", "Implements", "is child of"
   link_type: "Relates"
 
 # Default Values for Issue Creation
 defaults:
-  # Epic defaults
+  # Epic defaults (created from SPEC.md)
   epic:
     labels: []
     # Custom fields for epic (discover with /speckit.jira.discover-fields)
     custom_fields: {}
 
-  # Story defaults
+  # Story defaults (created from Phase headers)
   story:
     labels: []
     custom_fields: {}
 
-  # Task/Subtask defaults
+  # Task/Subtask defaults (created from task items)
   task:
     labels: []
     custom_fields: {}
@@ -43,11 +58,20 @@ field_mappings:
   # Example: Map task status to custom field
   # task_status: "customfield_10002"
 
-# MCP Server Configuration
-# The jira-mcp-server tool should be configured separately
-# See: https://github.com/your-org/jira-mcp-server
+# Status Mapping for sync-status command
+# Maps task checkbox states to Jira transitions
+status_mapping:
+  # When task is checked [x] in TASKS.md
+  completed: "Done"
+  # When task is unchecked [ ] in TASKS.md
+  pending: "To Do"
+  # When task is in progress [~] in TASKS.md (optional convention)
+  in_progress: "In Progress"
 
 # Environment Variable Overrides:
+# - SPECKIT_JIRA_MCP_SERVER: Override mcp_server
 # - SPECKIT_JIRA_PROJECT_KEY: Override project.key
-# - SPECKIT_JIRA_ISSUE_TYPE: Override hierarchy.issue_type
+# - SPECKIT_JIRA_EPIC_TYPE: Override hierarchy.epic_type
+# - SPECKIT_JIRA_STORY_TYPE: Override hierarchy.story_type
+# - SPECKIT_JIRA_TASK_TYPE: Override hierarchy.task_type
 # - SPECKIT_JIRA_LINK_TYPE: Override hierarchy.link_type

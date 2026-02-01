@@ -1,10 +1,11 @@
 ---
 description: "Create Jira hierarchy from spec and tasks"
 tools:
-  - 'jira-mcp-server/epic_create'
-  - 'jira-mcp-server/issue_create'
-  - 'jira-mcp-server/issue_link'
-  - 'jira-mcp-server/issue_list'
+  # Server name is configurable via mcp_server in jira-config.yml (default: "atlassian")
+  - '{mcp_server}/createJiraIssue'
+  - '{mcp_server}/editJiraIssue'
+  - '{mcp_server}/searchJiraIssuesUsingJql'
+  - '{mcp_server}/getJiraIssue'
 ---
 
 # Create Jira Issues from Spec and Tasks
@@ -12,231 +13,390 @@ tools:
 This command creates a complete Jira issue hierarchy from your specification and task breakdown:
 
 - **Epic**: Created from SPEC.md (overall specification)
-- **Tasks/Subtasks**: Created from TASKS.md (individual implementation tasks)
-- **Links**: Automatic linking of tasks to epic
+- **Stories**: Created from Phase headers in TASKS.md (e.g., `## Phase 1: Setup`)
+- **Tasks/Subtasks**: Created from task items under each Phase (e.g., `- [ ] T001 ...`)
 
 ## Prerequisites
 
-1. Jira MCP server configured and running
+1. MCP server providing Jira tools configured and running (server name configured in jira-config.yml)
 2. Jira configuration file exists: `.specify/extensions/jira/jira-config.yml`
-3. Project has SPEC.md and TASKS.md files
+3. Specification directory with `spec.md` and `tasks.md` files in `specs/<spec-name>/`
 
 ## User Input
 
 $ARGUMENTS
 
+Accepts optional `--spec <name>` argument to specify which specification to use.
+If not provided, auto-detects from current directory or available specs.
+
 ## Steps
 
-### 1. Load Jira Configuration
+### 1. Detect Specification Directory
 
-Load the Jira configuration from the extension directory:
+Determine which specification to use (in order of priority):
 
-```bash
-config_file=".specify/extensions/jira/jira-config.yml"
+1. `--spec <name>` argument
+2. Git branch name (if matches a spec directory)
+3. Current directory (if inside `specs/<name>/`)
+4. Single spec (if only one exists)
 
-if [ ! -f "$config_file" ]; then
-  echo "❌ Error: Jira configuration not found at $config_file"
-  echo "Run 'specify extension add jira' to install and configure the extension"
-  exit 1
-fi
+Read the specification directory and validate that both `spec.md` and `tasks.md` exist.
 
-# Read configuration values
-project_key=$(yq eval '.project.key' "$config_file")
-issue_type=$(yq eval '.hierarchy.issue_type // "subtask"' "$config_file")
-link_type=$(yq eval '.hierarchy.link_type // "Relates"' "$config_file")
+### 2. Load Jira Configuration
 
-# Apply environment variable overrides
-project_key="${SPECKIT_JIRA_PROJECT_KEY:-$project_key}"
-issue_type="${SPECKIT_JIRA_ISSUE_TYPE:-$issue_type}"
-link_type="${SPECKIT_JIRA_LINK_TYPE:-$link_type}"
+Load the Jira configuration from `.specify/extensions/jira/jira-config.yml`:
 
-# Validate required fields
-if [ -z "$project_key" ]; then
-  echo "❌ Error: Jira project key not configured"
-  echo "Edit $config_file and set 'project.key'"
-  exit 1
-fi
+Required configuration:
+- `mcp_server`: Name of the MCP server (default: "atlassian")
+- `project.key`: Jira project key (required)
+- `hierarchy.epic_type`: Issue type for spec (default: "Epic")
+- `hierarchy.story_type`: Issue type for phases (default: "Story")
+- `hierarchy.task_type`: Issue type for tasks (default: "Sub-task")
+- `hierarchy.link_type`: Link type if not using subtasks (default: "Relates")
 
-echo "📋 Jira Project: $project_key"
-echo "🔗 Issue Type: $issue_type"
-echo "🔗 Link Type: $link_type"
-```
+**Backward Compatibility (v1.x configs):**
 
-### 2. Read Specification
+If the old `hierarchy.issue_type` is found instead of the new structure:
+1. Map `hierarchy.issue_type` → `hierarchy.task_type`
+2. Use defaults: `epic_type: "Epic"`, `story_type: "Story"`
+3. Display upgrade notice:
+   ```
+   ⚠️  Config upgrade: Found v1.x config with 'hierarchy.issue_type'
+      Mapped to: task_type = "{issue_type}"
+      Using defaults: epic_type = "Epic", story_type = "Story"
+      Consider updating jira-config.yml to v2.0 format.
+   ```
 
-Read the SPEC.md file to extract the epic information:
+Environment variable overrides:
+- `SPECKIT_JIRA_PROJECT_KEY` → `project.key`
+- `SPECKIT_JIRA_EPIC_TYPE` → `hierarchy.epic_type`
+- `SPECKIT_JIRA_STORY_TYPE` → `hierarchy.story_type`
+- `SPECKIT_JIRA_TASK_TYPE` → `hierarchy.task_type`
+- `SPECKIT_JIRA_ISSUE_TYPE` → `hierarchy.task_type` (legacy, for backward compat)
 
-```bash
-spec_file="SPEC.md"
+### 3. Parse SPEC.md
 
-if [ ! -f "$spec_file" ]; then
-  echo "❌ Error: Specification file not found: $spec_file"
-  echo "Create a specification first with /speckit.spec"
-  exit 1
-fi
+Read and parse the specification file to extract:
 
-echo "📄 Reading specification from $spec_file..."
-```
+1. **Title**: First H1 heading (e.g., `# TypeScript MSA Framework Implementation`)
+2. **Summary**: Content under the first heading or "Overview" section
+3. **Full content**: Entire spec for the Epic description
 
-### 3. Read Tasks
-
-Read the TASKS.md file to extract the task list:
-
-```bash
-tasks_file="TASKS.md"
-
-if [ ! -f "$tasks_file" ]; then
-  echo "❌ Error: Tasks file not found: $tasks_file"
-  echo "Generate tasks first with /speckit.tasks"
-  exit 1
-fi
-
-echo "📝 Reading tasks from $tasks_file..."
-```
-
-### 4. Create Epic from Specification
-
-Use the jira-mcp-server MCP tool to create an Epic for the specification:
-
-1. Extract the spec title and summary from SPEC.md
-2. Call the jira-mcp-server tool to create an epic:
-   - Summary: The spec title (first H1 heading)
-   - Description: The spec overview/summary section
-   - Project: The configured Jira project key
-   - Labels: From jira-config.yml defaults.epic.labels
-
-Example structure:
-
-- **Epic Summary**: "User Authentication System"
-- **Epic Description**: Full spec content or summary section
-
-Store the created Epic key (e.g., "MSATS-123") for linking tasks.
-
-### 5. Parse Tasks from TASKS.md
-
-Parse the TASKS.md file to extract individual tasks. Expected format:
-
+Example SPEC.md structure:
 ```markdown
-# Tasks
+# TypeScript MSA Framework Implementation
 
-## Task 1: Implement login endpoint
-Description of task 1
+## Overview
+This specification defines the implementation of...
 
-## Task 2: Add password hashing
-Description of task 2
-
-...
+## Goals
+- Goal 1
+- Goal 2
 ```
 
 Extract:
+- Epic title: "TypeScript MSA Framework Implementation"
+- Epic description: Full spec content (or truncated if too long for Jira)
 
-- Task title (from H2 headings)
-- Task description (content under each heading)
-- Task number/order
+### 4. Parse TASKS.md for Phases and Tasks
 
-### 6. Create Jira Issues for Each Task
+Read and parse the tasks file to extract the phase/task hierarchy:
 
-For each task parsed from TASKS.md:
+1. **Phases**: H2 headings starting with "Phase" (e.g., `## Phase 1: Setup`)
+2. **Tasks**: List items under each phase (e.g., `- [x] T001 Initialize pnpm workspace...`)
 
-1. Call jira-mcp-server to create an issue:
-   - Issue Type: From configuration (default: "subtask" or "task")
-   - Summary: Task title
-   - Description: Task description
-   - Project: The configured Jira project key
-   - Parent: The Epic key (if using subtasks)
-   - Labels: From jira-config.yml defaults.task.labels
+Example TASKS.md structure:
+```markdown
+# Tasks: TypeScript MSA Framework Implementation
 
-2. Store the created issue key for each task
+## Phase 1: Setup (Shared Infrastructure)
 
-### 7. Link Tasks to Epic
+- [x] T001 Initialize pnpm workspace with Nx and NestJS presets
+- [x] T002 Add root tsconfig.base.json with path aliases
+- [ ] T003 Configure root eslint.config.mjs
 
-For each created task issue:
+## Phase 2: Foundational (Blocking Prerequisites)
 
-1. Use jira-mcp-server to create a link:
-   - From: Task issue key
-   - To: Epic issue key
-   - Link Type: From configuration (default: "Relates")
+- [x] T010 Generate libs/core scaffold
+- [ ] T011 Generate libs/config scaffold
+```
 
-This ensures all tasks are properly associated with the epic.
+Extract into a structure like:
+```json
+{
+  "phases": [
+    {
+      "name": "Phase 1: Setup (Shared Infrastructure)",
+      "tasks": [
+        {"id": "T001", "description": "Initialize pnpm workspace with Nx and NestJS presets", "status": "completed"},
+        {"id": "T002", "description": "Add root tsconfig.base.json with path aliases", "status": "completed"},
+        {"id": "T003", "description": "Configure root eslint.config.mjs", "status": "pending"}
+      ]
+    },
+    {
+      "name": "Phase 2: Foundational (Blocking Prerequisites)",
+      "tasks": [
+        {"id": "T010", "description": "Generate libs/core scaffold", "status": "completed"},
+        {"id": "T011", "description": "Generate libs/config scaffold", "status": "pending"}
+      ]
+    }
+  ]
+}
+```
 
-### 8. Display Summary
+Task status mapping:
+- `[x]` → "completed"
+- `[ ]` → "pending"
+- `[~]` → "in_progress" (optional convention)
 
-Output a summary of created issues:
+### 5. Check for Existing Issues
 
-```bash
-echo ""
-echo "✅ Jira issues created successfully!"
-echo ""
-echo "Epic: $project_key-XXX - [Epic Title]"
-echo "URL: https://your-jira-instance.atlassian.net/browse/$project_key-XXX"
-echo ""
-echo "Created ${task_count} tasks:"
-for task_key in "${task_keys[@]}"; do
-  echo "  • $task_key - [Task Title]"
-  echo "    https://your-jira-instance.atlassian.net/browse/$task_key"
-done
-echo ""
-echo "All tasks linked to epic with '${link_type}' relationship"
+Before creating issues, check if a mapping file already exists at `specs/<spec-name>/jira-mapping.json`.
+
+If it exists:
+1. Display existing mapping summary
+2. Ask user whether to:
+   - Skip existing issues and only create missing ones
+   - Re-create all issues (creates duplicates)
+   - Abort and review existing mapping
+
+### 6. Create Epic from SPEC.md
+
+Use the configured MCP server to create an Epic:
+
+```
+Tool: {mcp_server}/createJiraIssue
+Parameters:
+  - projectKey: {project.key}
+  - issueTypeName: {hierarchy.epic_type}
+  - summary: {spec_title}
+  - description: {spec_content}
+  - additional_fields: {defaults.epic.custom_fields}
+```
+
+Store the created Epic key (e.g., "MSATS-100") for linking stories.
+
+Display:
+```
+✅ Created Epic: MSATS-100 - TypeScript MSA Framework Implementation
+   URL: https://your-jira.atlassian.net/browse/MSATS-100
+```
+
+### 7. Create Stories for Each Phase
+
+For each phase extracted from TASKS.md:
+
+```
+Tool: {mcp_server}/createJiraIssue
+Parameters:
+  - projectKey: {project.key}
+  - issueTypeName: {hierarchy.story_type}
+  - summary: {phase_name}
+  - description: "Phase from spec: {spec_name}\n\nTasks:\n- T001: ...\n- T002: ..."
+  - parent: {epic_key} (if Story can have Epic parent)
+  - additional_fields: {defaults.story.custom_fields}
+```
+
+If the Jira project doesn't support Epic as parent for Stories, link them using:
+```
+Tool: {mcp_server}/editJiraIssue (to set Epic Link field)
+```
+
+Store each Story key for linking tasks.
+
+Display:
+```
+✅ Created Story: MSATS-101 - Phase 1: Setup (Shared Infrastructure)
+   URL: https://your-jira.atlassian.net/browse/MSATS-101
+   Tasks: 9 tasks to create
+```
+
+### 8. Create Tasks Under Each Story
+
+For each task under each phase:
+
+If `hierarchy.task_type` is "Sub-task":
+```
+Tool: {mcp_server}/createJiraIssue
+Parameters:
+  - projectKey: {project.key}
+  - issueTypeName: "Sub-task"
+  - summary: {task_id}: {task_description}
+  - description: "Task from: {spec_name}\nPhase: {phase_name}\nStatus in spec: {task_status}"
+  - parent: {story_key}
+  - additional_fields: {defaults.task.custom_fields}
+```
+
+If `hierarchy.task_type` is "Task" or "Story" (not subtask):
+```
+Tool: {mcp_server}/createJiraIssue
+Parameters:
+  - projectKey: {project.key}
+  - issueTypeName: {hierarchy.task_type}
+  - summary: {task_id}: {task_description}
+  - description: "Task from: {spec_name}\nPhase: {phase_name}\nStatus in spec: {task_status}"
+  - additional_fields: {defaults.task.custom_fields}
+```
+
+Then link to Story using the configured link_type.
+
+Display progress:
+```
+  ├── ✅ MSATS-110 - T001: Initialize pnpm workspace
+  ├── ✅ MSATS-111 - T002: Add root tsconfig.base.json
+  └── ✅ MSATS-112 - T003: Configure root eslint.config.mjs
 ```
 
 ### 9. Save Issue Mapping
 
-Save a mapping file for future reference:
+Save a comprehensive mapping file at `specs/<spec-name>/jira-mapping.json`:
 
-```bash
-mapping_file=".specify/jira-mapping.json"
-
-cat > "$mapping_file" <<EOF
+```json
 {
-  "created_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-  "project": "$project_key",
+  "created_at": "2026-01-29T10:30:00Z",
+  "updated_at": "2026-01-29T10:35:00Z",
+  "spec": "001-ts-msa-implementation",
+  "project": "MSATS",
+  "jira_base_url": "https://your-jira.atlassian.net",
   "epic": {
-    "key": "$epic_key",
-    "summary": "$epic_summary"
+    "key": "MSATS-100",
+    "summary": "TypeScript MSA Framework Implementation",
+    "url": "https://your-jira.atlassian.net/browse/MSATS-100"
   },
-  "tasks": [
-    $(for i in "${!task_keys[@]}"; do
-      echo "    {\"key\": \"${task_keys[$i]}\", \"summary\": \"${task_summaries[$i]}\"}"
-      [ $i -lt $((${#task_keys[@]} - 1)) ] && echo ","
-    done)
-  ]
+  "stories": [
+    {
+      "key": "MSATS-101",
+      "summary": "Phase 1: Setup (Shared Infrastructure)",
+      "url": "https://your-jira.atlassian.net/browse/MSATS-101",
+      "tasks": [
+        {
+          "key": "MSATS-110",
+          "id": "T001",
+          "summary": "Initialize pnpm workspace with Nx and NestJS presets",
+          "status": "completed",
+          "url": "https://your-jira.atlassian.net/browse/MSATS-110"
+        },
+        {
+          "key": "MSATS-111",
+          "id": "T002",
+          "summary": "Add root tsconfig.base.json with path aliases",
+          "status": "completed",
+          "url": "https://your-jira.atlassian.net/browse/MSATS-111"
+        }
+      ]
+    },
+    {
+      "key": "MSATS-102",
+      "summary": "Phase 2: Foundational (Blocking Prerequisites)",
+      "url": "https://your-jira.atlassian.net/browse/MSATS-102",
+      "tasks": [
+        {
+          "key": "MSATS-120",
+          "id": "T010",
+          "summary": "Generate libs/core scaffold",
+          "status": "completed",
+          "url": "https://your-jira.atlassian.net/browse/MSATS-120"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_stories": 10,
+    "total_tasks": 94,
+    "completed_tasks": 87,
+    "pending_tasks": 7
+  }
 }
-EOF
+```
 
-echo "💾 Mapping saved to $mapping_file"
+### 10. Display Summary
+
+Output a complete summary:
+
+```
+═══════════════════════════════════════════════════════════════
+✅ Jira Hierarchy Created Successfully!
+═══════════════════════════════════════════════════════════════
+
+📋 Project: MSATS
+📁 Spec: 001-ts-msa-implementation
+
+Epic: MSATS-100 - TypeScript MSA Framework Implementation
+  └── https://your-jira.atlassian.net/browse/MSATS-100
+
+Stories (10):
+  ├── MSATS-101 - Phase 1: Setup (9 tasks)
+  ├── MSATS-102 - Phase 2: Foundational (17 tasks)
+  ├── MSATS-103 - Phase 3: User Story 1 (10 tasks)
+  └── ... (7 more)
+
+Summary:
+  • Total Stories: 10
+  • Total Tasks: 94
+  • Completed: 87 (93%)
+  • Pending: 7 (7%)
+
+💾 Mapping saved to: specs/001-ts-msa-implementation/jira-mapping.json
+
+Next steps:
+  • View Epic in Jira: https://your-jira.atlassian.net/browse/MSATS-100
+  • Sync status later: /speckit.jira.sync-status --spec 001-ts-msa-implementation
+═══════════════════════════════════════════════════════════════
 ```
 
 ## Configuration Reference
 
 Edit `.specify/extensions/jira/jira-config.yml` to customize:
 
-- **project.key**: Your Jira project key (required)
-- **hierarchy.issue_type**: Type of issues to create for tasks ("subtask", "task", or "story")
-- **hierarchy.link_type**: How to link tasks to epic ("Relates", "Blocks", "Implements")
-- **defaults.epic.labels**: Labels to apply to epic
-- **defaults.task.labels**: Labels to apply to all tasks
+| Config Key | Description | Default |
+|------------|-------------|---------|
+| `mcp_server` | MCP server name | "atlassian" |
+| `project.key` | Jira project key | (required) |
+| `hierarchy.epic_type` | Issue type for SPEC.md | "Epic" |
+| `hierarchy.story_type` | Issue type for Phases | "Story" |
+| `hierarchy.task_type` | Issue type for Tasks | "Sub-task" |
+| `hierarchy.link_type` | Link type (if not subtask) | "Relates" |
+| `defaults.epic.labels` | Labels for Epic | [] |
+| `defaults.story.labels` | Labels for Stories | [] |
+| `defaults.task.labels` | Labels for Tasks | [] |
 
 ## Troubleshooting
 
 ### "Jira configuration not found"
 
-Run `specify extension add jira` to install the extension and create the config template.
+Copy the template and configure:
+```bash
+cp .specify/extensions/jira/jira-config.template.yml .specify/extensions/jira/jira-config.yml
+# Edit jira-config.yml with your project settings
+```
 
-### "Jira project key not configured"
+### "Sub-task cannot have Epic as parent"
 
-Edit `.specify/extensions/jira/jira-config.yml` and set `project.key` to your Jira project key.
+Some Jira configurations don't allow subtasks under Epics. The command handles this by:
+1. Creating Stories under the Epic
+2. Creating Sub-tasks under Stories (not directly under Epic)
 
-### "MCP tool not available"
+### "Issue type not found"
 
-Ensure jira-mcp-server is configured in your AI agent's MCP settings.
+Use `/speckit.jira.discover-fields` to discover available issue types in your Jira project, then update `jira-config.yml` accordingly.
 
 ### Custom Fields
 
-Use `/speckit.jira.discover-fields` to discover available custom fields in your Jira instance, then add them to `jira-config.yml`.
+If your Jira project requires custom fields (e.g., Team, Sprint), discover them with `/speckit.jira.discover-fields` and add to the config:
+
+```yaml
+defaults:
+  epic:
+    custom_fields:
+      customfield_10001: "Platform Team"
+  story:
+    custom_fields:
+      customfield_10002: "Sprint 1"
+```
 
 ## Notes
 
-- This command requires the jira-mcp-server MCP tool to be configured
-- Epic and task creation happen in sequence to ensure proper linking
-- The mapping file (.specify/jira-mapping.json) can be used for status syncing
-- You can re-run this command to create a new hierarchy (it won't update existing issues)
+- This command creates issues in sequence: Epic → Stories → Tasks
+- The mapping file enables `/speckit.jira.sync-status` to sync completion status
+- Re-running creates new issues unless you manually update the mapping
+- Task IDs (T001, T002) are preserved in Jira summaries for traceability

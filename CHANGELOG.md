@@ -5,6 +5,73 @@ All notable changes to the Jira Integration Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-02-01
+
+### Added
+
+- **3-level hierarchy support**: Now creates Epic → Stories → Tasks/Subtasks
+  - Epic: Created from SPEC.md (overall specification)
+  - Stories: Created from Phase headers in TASKS.md (`## Phase X: ...`)
+  - Tasks: Created from task items under each Phase (`- [ ] TXXX ...`)
+- New hierarchy configuration options:
+  - `hierarchy.epic_type`: Issue type for SPEC.md (default: "Epic")
+  - `hierarchy.story_type`: Issue type for Phases (default: "Story")
+  - `hierarchy.task_type`: Issue type for Tasks (default: "Sub-task")
+- Enhanced jira-mapping.json structure with nested stories and tasks
+- Status mapping configuration for sync-status command
+
+### Changed
+
+- **Breaking**: Config structure changed from `hierarchy.issue_type` to separate `epic_type`, `story_type`, `task_type`
+- jira-mapping.json now includes stories array with nested tasks
+- Updated specstoissues command to parse Phase headers from TASKS.md
+
+### Backward Compatibility
+
+Old v1.x configs are automatically supported:
+- `hierarchy.issue_type` is mapped to `hierarchy.task_type`
+- Defaults applied: `epic_type: "Epic"`, `story_type: "Story"`
+- A notice is displayed suggesting config upgrade
+
+### Migration (optional)
+
+To use new config format:
+1. Update `jira-config.yml`:
+   - Replace `hierarchy.issue_type` with `hierarchy.task_type`
+   - Add `hierarchy.epic_type` and `hierarchy.story_type` if needed
+2. Delete existing `jira-mapping.json` files (will be recreated with new structure)
+
+## [1.2.0] - 2026-02-01
+
+### Added
+
+- **Multi-specification support**: Each specification now has its own Jira mapping
+- `--spec <name>` argument for `specstoissues` and `sync-status` commands
+- **Git branch auto-detection**: Automatically detects spec from branch name (e.g., `feature/005-spec-name`)
+- Auto-detection of specification from current directory or single-spec projects
+- Helpful error messages listing available specifications when multiple exist
+
+### Changed
+
+- Mapping files now stored in `specs/<spec-name>/jira-mapping.json` instead of `.specify/jira-mapping.json`
+- Sync logs now stored in `specs/<spec-name>/jira-sync-log.json` instead of `.specify/jira-sync-log.json`
+- Commands read `spec.md` and `tasks.md` from specification directories
+- Updated all documentation to reflect spec-aware file locations
+
+## [1.1.0] - 2026-01-29
+
+### Added
+
+- Configurable MCP server name via `mcp_server` setting in jira-config.yml
+- Default MCP server changed to "atlassian" to match common setup
+- New environment variable `SPECKIT_JIRA_MCP_SERVER` for server name override
+
+### Changed
+
+- Commands now use configurable MCP server instead of hardcoded "jira-mcp-server"
+- Updated all documentation to reflect configurable server name
+- Removed hardcoded tool requirement from extension.yml
+
 ## [1.0.0] - 2026-01-28
 
 ### Added
@@ -31,7 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Requirements
 
 - Spec Kit: >=0.1.0
-- jira-mcp-server: >=1.0.0
+- MCP server providing Jira tools (e.g., "atlassian", "jira-mcp-server")
 
 ## [Unreleased]
 
@@ -47,4 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[2.0.0]: https://github.com/statsperform/spec-kit-jira/releases/tag/v2.0.0
+[1.2.0]: https://github.com/statsperform/spec-kit-jira/releases/tag/v1.2.0
+[1.1.0]: https://github.com/statsperform/spec-kit-jira/releases/tag/v1.1.0
 [1.0.0]: https://github.com/statsperform/spec-kit-jira/releases/tag/v1.0.0

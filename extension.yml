@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: "jira"
   name: "Jira Integration"
-  version: "1.0.0"
+  version: "2.0.0"
   description: "Create Jira Epics, Stories, and Issues from spec-kit artifacts"
   author: "Stats Perform"
   repository: "https://github.com/statsperform/spec-kit-jira"
@@ -12,10 +12,9 @@ extension:
 
 requires:
   speckit_version: ">=0.1.0"
-  tools:
-    - name: "jira-mcp-server"
-      required: true
-      version: ">=1.0.0"
+  # Note: Requires an MCP server providing Jira/Atlassian tools
+  # The server name is configurable via mcp_server in jira-config.yml
+  # Common names: "atlassian", "jira-mcp-server", "jira"
 
 provides:
   commands:
@@ -52,10 +51,13 @@ tags:
   - "project-management"
 
 defaults:
+  mcp_server: "atlassian"
   project:
     key: ""
   hierarchy:
-    issue_type: "subtask"
+    epic_type: "Epic"
+    story_type: "Story"
+    task_type: "Sub-task"
     link_type: "Relates"
   defaults:
     epic:
