@@ -213,9 +213,21 @@ Display:
 
 ### 8. Create Tasks Under Each Story
 
-For each task under each phase:
+**IMPORTANT: Tasks belong to Stories, NOT to the Epic!**
 
-If `hierarchy.task_type` is "Sub-task":
+The hierarchy is:
+```
+Epic (from SPEC.md)
+  └── Story (from Phase header)        ← Story's parent = Epic
+        └── Task (from task item)      ← Task's parent = Story (NOT Epic!)
+```
+
+For each Story created in Step 7, iterate through its tasks and create them:
+
+**If `hierarchy.task_type` is "Sub-task":**
+
+Sub-tasks MUST have the **Story** as their parent (not the Epic):
+
 ```
 Tool: {mcp_server}/createJiraIssue
 Parameters:
@@ -223,22 +235,25 @@ Parameters:
   - issueTypeName: "Sub-task"
   - summary: {task_id}: {task_description}
   - description: "Task from: {spec_name}\nPhase: {phase_name}\nStatus in spec: {task_status}"
-  - parent: {story_key}
+  - parent: {story_key}        ← MUST be the Story key, NOT the Epic key!
   - additional_fields: {defaults.task.custom_fields}
 ```
 
-If `hierarchy.task_type` is "Task" or "Story" (not subtask):
+**If `hierarchy.task_type` is "Task" (not subtask):**
+
+Create as standalone Task, then link to the **Story** (not Epic):
+
 ```
 Tool: {mcp_server}/createJiraIssue
 Parameters:
   - projectKey: {project.key}
-  - issueTypeName: {hierarchy.task_type}
+  - issueTypeName: "Task"
   - summary: {task_id}: {task_description}
   - description: "Task from: {spec_name}\nPhase: {phase_name}\nStatus in spec: {task_status}"
   - additional_fields: {defaults.task.custom_fields}
 ```
 
-Then link to Story using the configured link_type.
+Then link to **Story** (not Epic) using the configured link_type.
 
 Display progress:
 ```
