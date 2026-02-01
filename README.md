@@ -8,14 +8,14 @@ Create Jira Epics, Stories, and Issues directly from your spec-kit specification
 - **Custom Field Discovery**: Discover and configure Jira custom fields
 - **Status Synchronization**: Keep local task status in sync with Jira
 - **Flexible Configuration**: Project-level config with local overrides and environment variables
-- **MCP Integration**: Uses jira-mcp-server for AI-native Jira interactions
+- **MCP Integration**: Works with any MCP server providing Jira/Atlassian tools (configurable)
 
 ## Installation
 
 ### Prerequisites
 
 1. **Spec Kit** version 0.1.0 or higher
-2. **Jira MCP Server** configured in your AI agent
+2. **MCP server providing Jira tools** configured in your AI agent (e.g., "atlassian", "jira-mcp-server")
 3. Valid Jira account with project access
 
 ### Install Extension
@@ -30,11 +30,14 @@ specify extension add --dev /path/to/spec-kit-jira
 
 ## Configuration
 
-### 1. Set Jira Project Key
+### 1. Set MCP Server and Jira Project Key
 
 Edit `.specify/extensions/jira/jira-config.yml`:
 
 ```yaml
+# MCP server providing Jira tools (default: "atlassian")
+mcp_server: "atlassian"
+
 project:
   key: "MYPROJECT"  # Replace with your Jira project key
 ```
@@ -84,10 +87,17 @@ claude
 
 This will:
 
-1. Create a Jira Epic from SPEC.md
-2. Create Tasks/Subtasks from TASKS.md
-3. Link all tasks to the epic
-4. Save mapping to `.specify/jira-mapping.json`
+1. Auto-detect spec from git branch name, current directory, or prompt if multiple exist
+2. Create a Jira Epic from `specs/<spec-name>/spec.md`
+3. Create Tasks/Subtasks from `specs/<spec-name>/tasks.md`
+4. Link all tasks to the epic
+5. Save mapping to `specs/<spec-name>/jira-mapping.json`
+
+To specify a particular spec:
+
+```bash
+> /speckit.jira.specstoissues --spec 005-python-endpoint-alignment
+```
 
 ### Discover Custom Fields
 
@@ -124,10 +134,15 @@ This will:
 
 Create complete Jira issue hierarchy from spec and tasks.
 
+**Arguments:**
+
+- `--spec <name>` (optional): Specification name to use. Auto-detects if not provided.
+
 **Prerequisites:**
 
-- SPEC.md file exists
-- TASKS.md file exists
+- Specification directory exists: `specs/<spec-name>/`
+- `spec.md` file exists in the specification directory
+- `tasks.md` file exists in the specification directory
 - Jira project key configured
 
 **Output:**
@@ -135,7 +150,7 @@ Create complete Jira issue hierarchy from spec and tasks.
 - Epic created from spec
 - Tasks created from task list
 - All tasks linked to epic
-- Mapping file: `.specify/jira-mapping.json`
+- Mapping file: `specs/<spec-name>/jira-mapping.json`
 
 ### `/speckit.jira.discover-fields`
 
@@ -144,7 +159,7 @@ Discover available custom fields in Jira instance.
 **Prerequisites:**
 
 - Jira project key configured
-- jira-mcp-server configured
+- MCP server providing Jira tools configured
 
 **Output:**
 
@@ -157,17 +172,21 @@ Discover available custom fields in Jira instance.
 
 Sync local task completion to Jira.
 
+**Arguments:**
+
+- `--spec <name>` (optional): Specification name to sync. Auto-detects if not provided.
+
 **Prerequisites:**
 
 - Issues created via `/speckit.jira.specstoissues`
-- Mapping file exists: `.specify/jira-mapping.json`
-- TASKS.md has completion markers
+- Mapping file exists: `specs/<spec-name>/jira-mapping.json`
+- `tasks.md` has completion markers
 
 **Output:**
 
 - Updated Jira issue statuses
 - Epic progress calculation
-- Sync log: `.specify/jira-sync-log.json`
+- Sync log: `specs/<spec-name>/jira-sync-log.json`
 
 ## Configuration Reference
 
@@ -175,6 +194,9 @@ Sync local task completion to Jira.
 
 ```yaml
 # .specify/extensions/jira/jira-config.yml
+
+# MCP Server Configuration
+mcp_server: "atlassian"  # or "jira-mcp-server", "jira", etc.
 
 # Jira Project Configuration
 project:
@@ -215,6 +237,9 @@ workflow:
 ### Environment Variable Overrides
 
 ```bash
+# Override MCP server name
+export SPECKIT_JIRA_MCP_SERVER="atlassian"
+
 # Override project key
 export SPECKIT_JIRA_PROJECT_KEY="DEVTEST"
 
@@ -269,11 +294,11 @@ Another completed task
 
 ### "MCP tool not available"
 
-**Solution**: Ensure jira-mcp-server is configured in your AI agent's MCP settings.
+**Solution**: Ensure your MCP server providing Jira tools is configured in your AI agent's MCP settings, and verify the `mcp_server` name in jira-config.yml matches.
 
 ### "Issue not found" or "Permission denied"
 
-**Solution**: Verify your Jira credentials and project permissions with jira-mcp-server.
+**Solution**: Verify your Jira credentials and project permissions in your MCP server configuration.
 
 ### Custom fields not working
 
@@ -339,7 +364,7 @@ defaults:
 
 ### Repository Structure
 
-```
+```text
 spec-kit-jira/
 ├── README.md
 ├── LICENSE
@@ -386,7 +411,6 @@ Contributions welcome! Please:
 
 - **Issues**: <https://github.com/statsperform/spec-kit-jira/issues>
 - **Spec Kit Docs**: <https://github.com/statsperform/spec-kit>
-- **Jira MCP Server**: <https://github.com/your-org/jira-mcp-server>
 
 ## Related Extensions
 

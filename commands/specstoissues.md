@@ -46,33 +46,32 @@ Read the specification directory and validate that both `spec.md` and `tasks.md`
 
 Load the Jira configuration from `.specify/extensions/jira/jira-config.yml`:
 
-Required configuration:
-- `mcp_server`: Name of the MCP server (default: "atlassian")
-- `project.key`: Jira project key (required)
-- `hierarchy.epic_type`: Issue type for spec (default: "Epic")
-- `hierarchy.story_type`: Issue type for phases (default: "Story")
-- `hierarchy.task_type`: Issue type for tasks (default: "Sub-task")
-- `hierarchy.link_type`: Link type if not using subtasks (default: "Relates")
+**Issue Types:**
+- `hierarchy.epic_type`: Issue type for SPEC.md (default: "Epic")
+- `hierarchy.story_type`: Issue type for Phase headers (default: "Story")
+- `hierarchy.task_type`: Issue type for task items (default: "Task")
 
-**Backward Compatibility (v1.x configs):**
+**Relationships:**
+- `hierarchy.relationships.epic_story`: How Story links to Epic (default: "Epic Link")
+- `hierarchy.relationships.story_task`: How Task links to Story (default: "Parent")
+- `hierarchy.relationships.epic_task`: Direct Task-Epic link (default: "none")
 
-If the old `hierarchy.issue_type` is found instead of the new structure:
-1. Map `hierarchy.issue_type` → `hierarchy.task_type`
-2. Use defaults: `epic_type: "Epic"`, `story_type: "Story"`
-3. Display upgrade notice:
-   ```
-   ⚠️  Config upgrade: Found v1.x config with 'hierarchy.issue_type'
-      Mapped to: task_type = "{issue_type}"
-      Using defaults: epic_type = "Epic", story_type = "Story"
-      Consider updating jira-config.yml to v2.0 format.
-   ```
+Relationship options: `"Parent"`, `"Epic Link"`, `"Relates"`, `"Blocks"`, `"Implements"`, `"is child of"`, `"none"`
 
-Environment variable overrides:
+**Backward Compatibility:**
+
+If old config structure is found:
+- `hierarchy.issue_type` → maps to `hierarchy.task_type`
+- `hierarchy.link_type` → maps to `hierarchy.relationships.story_task`
+- Missing relationship configs use defaults
+
+**Environment variable overrides:**
 - `SPECKIT_JIRA_PROJECT_KEY` → `project.key`
 - `SPECKIT_JIRA_EPIC_TYPE` → `hierarchy.epic_type`
 - `SPECKIT_JIRA_STORY_TYPE` → `hierarchy.story_type`
 - `SPECKIT_JIRA_TASK_TYPE` → `hierarchy.task_type`
-- `SPECKIT_JIRA_ISSUE_TYPE` → `hierarchy.task_type` (legacy, for backward compat)
+- `SPECKIT_JIRA_EPIC_STORY_RELATIONSHIP` → `hierarchy.relationships.epic_story`
+- `SPECKIT_JIRA_STORY_TASK_RELATIONSHIP` → `hierarchy.relationships.story_task`
 
 ### 3. Parse SPEC.md
 
@@ -184,7 +183,9 @@ Display:
 
 ### 7. Create Stories for Each Phase
 
-For each phase extracted from TASKS.md:
+For each phase extracted from TASKS.md, create a Story and link it to the Epic:
+
+**Step 7a: Create the Story**
 
 ```
 Tool: {mcp_server}/createJiraIssue
@@ -193,14 +194,17 @@ Parameters:
   - issueTypeName: {hierarchy.story_type}
   - summary: {phase_name}
   - description: "Phase from spec: {spec_name}\n\nTasks:\n- T001: ...\n- T002: ..."
-  - parent: {epic_key} (if Story can have Epic parent)
   - additional_fields: {defaults.story.custom_fields}
 ```
 
-If the Jira project doesn't support Epic as parent for Stories, link them using:
-```
-Tool: {mcp_server}/editJiraIssue (to set Epic Link field)
-```
+**Step 7b: Link Story to Epic based on `relationships.epic_story`**
+
+| epic_story value | Action |
+|------------------|--------|
+| `"Parent"` | Set Story's parent field to Epic key |
+| `"Epic Link"` | Set Epic Link custom field on Story to Epic key |
+| `"Relates"` / `"Blocks"` / etc. | Create issue link from Story to Epic |
+| `"none"` | No link created |
 
 Store each Story key for linking tasks.
 
@@ -208,52 +212,43 @@ Display:
 ```
 ✅ Created Story: MSATS-101 - Phase 1: Setup (Shared Infrastructure)
    URL: https://your-jira.atlassian.net/browse/MSATS-101
+   Linked to Epic via: {relationships.epic_story}
    Tasks: 9 tasks to create
 ```
 
 ### 8. Create Tasks Under Each Story
 
-**IMPORTANT: Tasks belong to Stories, NOT to the Epic!**
+For each Story, create its Tasks and link them based on `relationships.story_task`:
 
-The hierarchy is:
-```
-Epic (from SPEC.md)
-  └── Story (from Phase header)        ← Story's parent = Epic
-        └── Task (from task item)      ← Task's parent = Story (NOT Epic!)
-```
-
-For each Story created in Step 7, iterate through its tasks and create them:
-
-**If `hierarchy.task_type` is "Sub-task":**
-
-Sub-tasks MUST have the **Story** as their parent (not the Epic):
+**Step 8a: Create the Task**
 
 ```
 Tool: {mcp_server}/createJiraIssue
 Parameters:
   - projectKey: {project.key}
-  - issueTypeName: "Sub-task"
-  - summary: {task_id}: {task_description}
-  - description: "Task from: {spec_name}\nPhase: {phase_name}\nStatus in spec: {task_status}"
-  - parent: {story_key}        ← MUST be the Story key, NOT the Epic key!
-  - additional_fields: {defaults.task.custom_fields}
-```
-
-**If `hierarchy.task_type` is "Task" (not subtask):**
-
-Create as standalone Task, then link to the **Story** (not Epic):
-
-```
-Tool: {mcp_server}/createJiraIssue
-Parameters:
-  - projectKey: {project.key}
-  - issueTypeName: "Task"
+  - issueTypeName: {hierarchy.task_type}
   - summary: {task_id}: {task_description}
   - description: "Task from: {spec_name}\nPhase: {phase_name}\nStatus in spec: {task_status}"
   - additional_fields: {defaults.task.custom_fields}
 ```
 
-Then link to **Story** (not Epic) using the configured link_type.
+**Step 8b: Link Task to Story based on `relationships.story_task`**
+
+| story_task value | Action |
+|------------------|--------|
+| `"Parent"` | Set Task's parent field to Story key |
+| `"Relates"` / `"Blocks"` / etc. | Create issue link from Task to Story |
+| `"none"` | No link created |
+
+**Step 8c (optional): Link Task to Epic based on `relationships.epic_task`**
+
+If `relationships.epic_task` is not `"none"`:
+
+| epic_task value | Action |
+|-----------------|--------|
+| `"Epic Link"` | Set Epic Link custom field on Task to Epic key |
+| `"Relates"` / `"Blocks"` / etc. | Create issue link from Task to Epic |
+| `"none"` | No direct Task-Epic link (default) |
 
 Display progress:
 ```

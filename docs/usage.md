@@ -29,18 +29,21 @@ This will:
 - Create config template at `.specify/extensions/jira/jira-config.yml`
 - Register commands with your AI agent
 
-### 2. Configure Jira Project
+### 2. Configure MCP Server and Jira Project
 
 Edit `.specify/extensions/jira/jira-config.yml`:
 
 ```yaml
+# MCP server providing Jira tools (default: "atlassian")
+mcp_server: "atlassian"
+
 project:
   key: "MYPROJECT"  # Your Jira project key
 ```
 
 ### 3. Verify MCP Server
 
-Ensure jira-mcp-server is configured in your AI agent (Claude Code). Check your MCP settings file.
+Ensure your MCP server providing Jira tools is configured in your AI agent (Claude Code). The server name in your MCP settings must match the `mcp_server` value in jira-config.yml.
 
 ---
 
@@ -79,11 +82,12 @@ This creates:
 
 **Output files:**
 
-- `.specify/jira-mapping.json` - Maps local tasks to Jira issue keys
+- `specs/<spec-name>/jira-mapping.json` - Maps local tasks to Jira issue keys
 
 **Example output:**
 
-```
+```text
+🔌 MCP Server: atlassian
 📋 Jira Project: MSATS
 🔗 Issue Type: subtask
 🔗 Link Type: Relates
@@ -146,7 +150,7 @@ This will:
 
 **Output:**
 
-```
+```text
 📋 Available Custom Fields:
 
 Custom Fields (available in your Jira instance):
@@ -224,6 +228,9 @@ defaults:
 For CI/CD or temporary overrides:
 
 ```bash
+# Override MCP server name
+export SPECKIT_JIRA_MCP_SERVER="atlassian"
+
 # Override project key
 export SPECKIT_JIRA_PROJECT_KEY="DEVTEST"
 
@@ -244,19 +251,19 @@ claude
 
 The sync-status command recognizes several completion markers:
 
-**Option 1: Checkmark emoji**
+#### Option 1: Checkmark emoji
 
 ```markdown
 ## Task 1: Implement login endpoint ✅
 ```
 
-**Option 2: Checkbox syntax**
+#### Option 2: Checkbox syntax
 
 ```markdown
 ## Task 1: Implement login endpoint [x]
 ```
 
-**Option 3: Status prefix**
+#### Option 3: Status prefix
 
 ```markdown
 ## Task 1: [DONE] Implement login endpoint
@@ -274,11 +281,11 @@ The sync-status command recognizes several completion markers:
 
 **Output:**
 
-```
+```text
 🔄 Syncing task status to Jira project: MSATS
 
-📝 Parsing task completion from TASKS.md...
-📋 Loading issue mappings from .specify/jira-mapping.json...
+📝 Parsing task completion from specs/<spec-name>/tasks.md...
+📋 Loading issue mappings from specs/<spec-name>/jira-mapping.json...
 🔄 Syncing statuses...
 
   ✓ Task 1 (MSATS-1235) - Marking as Done
@@ -383,13 +390,14 @@ project:
 
 ### MCP Tool Not Available
 
-**Error:** `Tool 'jira-mcp-server/epic_create' not found`
+**Error:** `Tool '{mcp_server}/epic_create' not found`
 
 **Solution:**
 
 1. Check MCP configuration in your AI agent
-2. Verify jira-mcp-server is installed and configured
-3. Restart AI agent after MCP configuration changes
+2. Verify your MCP server providing Jira tools is installed and configured
+3. Ensure `mcp_server` in jira-config.yml matches your MCP server name (e.g., "atlassian")
+4. Restart AI agent after MCP configuration changes
 
 ### Permission Denied
 
@@ -397,7 +405,7 @@ project:
 
 **Solution:**
 
-1. Verify Jira credentials in jira-mcp-server configuration
+1. Verify Jira credentials in your MCP server configuration
 2. Check project key is correct
 3. Ensure you have create issue permissions in the Jira project
 

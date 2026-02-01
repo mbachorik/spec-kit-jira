@@ -57,8 +57,11 @@ defaults:
   hierarchy:
     epic_type: "Epic"
     story_type: "Story"
-    task_type: "Sub-task"
-    link_type: "Relates"
+    task_type: "Task"
+    relationships:
+      epic_story: "Epic Link"
+      story_task: "Parent"
+      epic_task: "none"
   defaults:
     epic:
       labels: []

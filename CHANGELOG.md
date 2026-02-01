@@ -9,36 +9,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **3-level hierarchy support**: Now creates Epic → Stories → Tasks/Subtasks
+- **3-level hierarchy support**: Now creates Epic → Stories → Tasks
   - Epic: Created from SPEC.md (overall specification)
   - Stories: Created from Phase headers in TASKS.md (`## Phase X: ...`)
   - Tasks: Created from task items under each Phase (`- [ ] TXXX ...`)
+- **Configurable relationships** for Team-managed and Company-managed Jira projects:
+  - `hierarchy.relationships.epic_story`: How Story links to Epic (default: "Epic Link")
+  - `hierarchy.relationships.story_task`: How Task links to Story (default: "Parent")
+  - `hierarchy.relationships.epic_task`: Direct Task-Epic link (default: "none")
+  - Options: "Parent", "Epic Link", "Relates", "Blocks", "Implements", "is child of", "none"
 - New hierarchy configuration options:
   - `hierarchy.epic_type`: Issue type for SPEC.md (default: "Epic")
   - `hierarchy.story_type`: Issue type for Phases (default: "Story")
-  - `hierarchy.task_type`: Issue type for Tasks (default: "Sub-task")
+  - `hierarchy.task_type`: Issue type for Tasks (default: "Task")
 - Enhanced jira-mapping.json structure with nested stories and tasks
 - Status mapping configuration for sync-status command
 
 ### Changed
 
-- **Breaking**: Config structure changed from `hierarchy.issue_type` to separate `epic_type`, `story_type`, `task_type`
+- **Breaking**: Config structure changed from `hierarchy.issue_type` to `epic_type`, `story_type`, `task_type`
+- **Breaking**: `hierarchy.link_type` replaced by `hierarchy.relationships` section
+- Default `task_type` changed from "Sub-task" to "Task"
+- Default Epic-Story relationship is "Epic Link" (Company-managed compatible)
 - jira-mapping.json now includes stories array with nested tasks
 - Updated specstoissues command to parse Phase headers from TASKS.md
 
 ### Backward Compatibility
 
 Old v1.x configs are automatically supported:
-- `hierarchy.issue_type` is mapped to `hierarchy.task_type`
-- Defaults applied: `epic_type: "Epic"`, `story_type: "Story"`
-- A notice is displayed suggesting config upgrade
+- `hierarchy.issue_type` → maps to `hierarchy.task_type`
+- `hierarchy.link_type` → maps to `hierarchy.relationships.story_task`
+- Missing relationship configs use defaults
 
 ### Migration (optional)
 
 To use new config format:
 1. Update `jira-config.yml`:
    - Replace `hierarchy.issue_type` with `hierarchy.task_type`
-   - Add `hierarchy.epic_type` and `hierarchy.story_type` if needed
+   - Replace `hierarchy.link_type` with `hierarchy.relationships.story_task`
+   - Add `hierarchy.relationships` section for full control
 2. Delete existing `jira-mapping.json` files (will be recreated with new structure)
 
 ## [1.2.0] - 2026-02-01

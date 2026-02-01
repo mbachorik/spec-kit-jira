@@ -1,8 +1,9 @@
 ---
 description: "Discover Jira custom fields for configuration"
 tools:
-  - 'jira-mcp-server/field_list'
-  - 'jira-mcp-server/project_get'
+  # Server name is configurable via mcp_server in jira-config.yml (default: "atlassian")
+  - '{mcp_server}/field_list'
+  - '{mcp_server}/project_get'
 ---
 
 # Discover Jira Custom Fields
@@ -19,7 +20,7 @@ Different Jira instances have different custom fields based on your organization
 
 ## Prerequisites
 
-1. Jira MCP server configured and running
+1. MCP server providing Jira tools configured and running (server name configured in jira-config.yml)
 2. Jira configuration file exists: `.specify/extensions/jira/jira-config.yml`
 3. Valid Jira project key configured
 
@@ -40,8 +41,12 @@ if [ ! -f "$config_file" ]; then
   exit 1
 fi
 
-# Read project key
+# Read configuration values
+mcp_server=$(yq eval '.mcp_server // "atlassian"' "$config_file")
 project_key=$(yq eval '.project.key' "$config_file")
+
+# Apply environment variable overrides
+mcp_server="${SPECKIT_JIRA_MCP_SERVER:-$mcp_server}"
 project_key="${SPECKIT_JIRA_PROJECT_KEY:-$project_key}"
 
 if [ -z "$project_key" ]; then
@@ -50,16 +55,17 @@ if [ -z "$project_key" ]; then
   exit 1
 fi
 
+echo "🔌 MCP Server: $mcp_server"
 echo "🔍 Discovering fields for Jira project: $project_key"
 echo ""
 ```
 
 ### 2. Fetch Project Information
 
-Use jira-mcp-server to get project details:
+Use the configured MCP server to get project details:
 
 ```markdown
-Call the jira-mcp-server MCP tool to get project information:
+Call the the configured MCP server MCP tool to get project information:
 - Tool: project_get
 - Parameters: { "project_key": "$project_key" }
 
@@ -68,10 +74,10 @@ This verifies the project exists and is accessible.
 
 ### 3. List All Fields
 
-Use jira-mcp-server to fetch all available fields:
+Use the configured MCP server to fetch all available fields:
 
 ```markdown
-Call the jira-mcp-server MCP tool to list fields:
+Call the the configured MCP server MCP tool to list fields:
 - Tool: field_list
 - Parameters: {}
 
