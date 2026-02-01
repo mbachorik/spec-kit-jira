@@ -216,19 +216,25 @@ Display:
    Tasks: 9 tasks to create
 ```
 
-### 8. Create Tasks Under Each Story
+### 8. Create Individual Jira Issues for EACH Task
 
-For each Story, create its Tasks and link them based on `relationships.story_task`:
+**CRITICAL: This step is MANDATORY. You MUST create a separate Jira issue for EVERY task listed in TASKS.md.**
 
-**Step 8a: Create the Task**
+DO NOT skip this step. DO NOT just put tasks in the Story description. Each `- [ ] T001 ...` line in TASKS.md becomes its own Jira issue.
+
+**For each task item** (e.g., `- [x] T001 Initialize pnpm workspace...`):
+
+**Step 8a: Create the Jira Task issue**
+
+Call the MCP tool to create the task:
 
 ```
 Tool: {mcp_server}/createJiraIssue
 Parameters:
   - projectKey: {project.key}
   - issueTypeName: {hierarchy.task_type}
-  - summary: {task_id}: {task_description}
-  - description: "Task from: {spec_name}\nPhase: {phase_name}\nStatus in spec: {task_status}"
+  - summary: "{task_id}: {task_description}"
+  - description: "Task from spec: {spec_name}\nPhase: {phase_name}\nStatus in spec-kit: {task_status}"
   - additional_fields: {defaults.task.custom_fields}
 ```
 
@@ -240,22 +246,33 @@ Parameters:
 | `"Relates"` / `"Blocks"` / etc. | Create issue link from Task to Story |
 | `"none"` | No link created |
 
-**Step 8c (optional): Link Task to Epic based on `relationships.epic_task`**
-
-If `relationships.epic_task` is not `"none"`:
+**Step 8c: Link Task to Epic based on `relationships.epic_task`**
 
 | epic_task value | Action |
 |-----------------|--------|
 | `"Epic Link"` | Set Epic Link custom field on Task to Epic key |
 | `"Relates"` / `"Blocks"` / etc. | Create issue link from Task to Epic |
-| `"none"` | No direct Task-Epic link (default) |
+| `"none"` | No direct Task-Epic link |
 
-Display progress:
+**Repeat steps 8a-8c for EVERY task** in the phase before moving to the next Story.
+
+Example: If Phase 1 has 9 tasks (T001-T009), you create 9 Jira issues:
 ```
+Creating tasks for Story MSATS-101 (Phase 1: Setup):
   ├── ✅ MSATS-110 - T001: Initialize pnpm workspace
   ├── ✅ MSATS-111 - T002: Add root tsconfig.base.json
-  └── ✅ MSATS-112 - T003: Configure root eslint.config.mjs
+  ├── ✅ MSATS-112 - T003: Configure root eslint.config.mjs
+  ├── ✅ MSATS-113 - T004: Configure prettier
+  ├── ✅ MSATS-114 - T005: Add root vitest.config.ts
+  ├── ✅ MSATS-115 - T006: Add .npmrc
+  ├── ✅ MSATS-116 - T007: Add Nx workspace config
+  ├── ✅ MSATS-117 - T008: Add workspace lint/test scripts
+  └── ✅ MSATS-118 - T009: Add .gitignore updates
+
+9 tasks created for Phase 1
 ```
+
+**IMPORTANT**: The jira-mapping.json must include ALL created task keys. If tasks are missing from the mapping, you have not completed this step correctly.
 
 ### 9. Save Issue Mapping
 
