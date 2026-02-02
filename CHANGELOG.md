@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Backward Compatibility
 
 Old v1.x configs are automatically supported:
+
 - `hierarchy.issue_type` → maps to `hierarchy.task_type`
 - `hierarchy.link_type` → maps to `hierarchy.relationships.story_task`
 - Missing relationship configs use defaults
@@ -44,6 +45,7 @@ Old v1.x configs are automatically supported:
 ### Migration (optional)
 
 To use new config format:
+
 1. Update `jira-config.yml`:
    - Replace `hierarchy.issue_type` with `hierarchy.task_type`
    - Replace `hierarchy.link_type` with `hierarchy.relationships.story_task`
