@@ -1,5 +1,10 @@
 # Spec Kit - Jira Integration Extension
 
+[![Spec Kit](https://img.shields.io/badge/spec--kit-extension-blue?logo=github)](https://github.com/github/spec-kit)
+[![Version](https://img.shields.io/badge/version-1.1.0-green)](https://github.com/mbachorik/spec-kit-jira/releases)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Issues](https://img.shields.io/github/issues/mbachorik/spec-kit-jira)](https://github.com/mbachorik/spec-kit-jira/issues)
+
 Create Jira Epics, Stories, and Issues directly from your spec-kit specifications and task breakdowns.
 
 ## Features
@@ -409,8 +414,8 @@ Contributions welcome! Please:
 
 ## Support
 
-- **Issues**: <https://github.com/statsperform/spec-kit-jira/issues>
-- **Spec Kit Docs**: <https://github.com/statsperform/spec-kit>
+- **Issues**: <https://github.com/mbachorik/spec-kit-jira/issues>
+- **Spec Kit Docs**: <https://github.com/github/spec-kit>
 
 ## Related Extensions
 
