@@ -5,10 +5,10 @@ extension:
   name: "Jira Integration"
   version: "2.0.0"
   description: "Create Jira Epics, Stories, and Issues from spec-kit artifacts"
-  author: "Stats Perform"
-  repository: "https://github.com/statsperform/spec-kit-jira"
+  author: "Michal Bachorik"
+  repository: "https://github.com/mbachorik/spec-kit-jira"
   license: "MIT"
-  homepage: "https://github.com/statsperform/spec-kit-jira"
+  homepage: "https://github.com/mbachorik/spec-kit-jira"
 
 requires:
   speckit_version: ">=0.1.0"

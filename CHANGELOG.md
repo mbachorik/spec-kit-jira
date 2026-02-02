@@ -123,7 +123,7 @@ To use new config format:
 
 ---
 
-[2.0.0]: https://github.com/statsperform/spec-kit-jira/releases/tag/v2.0.0
-[1.2.0]: https://github.com/statsperform/spec-kit-jira/releases/tag/v1.2.0
-[1.1.0]: https://github.com/statsperform/spec-kit-jira/releases/tag/v1.1.0
-[1.0.0]: https://github.com/statsperform/spec-kit-jira/releases/tag/v1.0.0
+[2.0.0]: https://github.com/mbachorik/spec-kit-jira/releases/tag/v2.0.0
+[1.2.0]: https://github.com/mbachorik/spec-kit-jira/releases/tag/v1.2.0
+[1.1.0]: https://github.com/mbachorik/spec-kit-jira/releases/tag/v1.1.0
+[1.0.0]: https://github.com/mbachorik/spec-kit-jira/releases/tag/v1.0.0

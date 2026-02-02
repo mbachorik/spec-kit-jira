@@ -1,7 +1,7 @@
 # Spec Kit - Jira Integration Extension
 
 [![Spec Kit](https://img.shields.io/badge/spec--kit-extension-blue?logo=github)](https://github.com/github/spec-kit)
-[![Version](https://img.shields.io/badge/version-1.1.0-green)](https://github.com/mbachorik/spec-kit-jira/releases)
+[![Version](https://img.shields.io/badge/version-2.0.0-green)](https://github.com/mbachorik/spec-kit-jira/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Issues](https://img.shields.io/github/issues/mbachorik/spec-kit-jira)](https://github.com/mbachorik/spec-kit-jira/issues)
 
