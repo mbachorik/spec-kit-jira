@@ -49,7 +49,16 @@ Load the Jira configuration from `.specify/extensions/jira/jira-config.yml`:
 **Issue Types:**
 - `hierarchy.epic_type`: Issue type for SPEC.md (default: "Epic")
 - `hierarchy.story_type`: Issue type for Phase headers (default: "Story")
-- `hierarchy.task_type`: Issue type for task items (default: "Task")
+- `hierarchy.task_type`: Issue type for task items (default: "Task"). Set to `""` or `"none"` for 2-level mode (Epic → Stories only)
+
+**2-Level Mode:**
+
+When `task_type` is empty (`""`) or `"none"`, the extension operates in 2-level mode:
+
+- Only Epic and Stories are created as Jira issues
+- Tasks are embedded as a checklist in the Story description
+- No individual Task issues are created
+- Useful for simpler projects or when tasks don't need individual tracking
 
 **Relationships:**
 - `hierarchy.relationships.epic_story`: How Story links to Epic (default: "Epic Link")
@@ -183,10 +192,19 @@ Display:
 
 ### 7. Create Stories for Each Phase
 
-For each phase extracted from TASKS.md, create a Story and link it to the Epic:
+For each phase extracted from TASKS.md, create a Story and link it to the Epic.
+
+**First, check if 2-level mode is enabled:**
+
+```
+is_two_level_mode = (task_type == "" OR task_type == "none" OR task_type is not set)
+```
 
 **Step 7a: Create the Story**
 
+The Story description varies based on mode:
+
+**3-Level Mode (default):** Brief description with task summary
 ```
 Tool: {mcp_server}/createJiraIssue
 Parameters:
@@ -194,6 +212,25 @@ Parameters:
   - issueTypeName: {hierarchy.story_type}
   - summary: {phase_name}
   - description: "Phase from spec: {spec_name}\n\nTasks:\n- T001: ...\n- T002: ..."
+  - additional_fields: {defaults.story.custom_fields}
+```
+
+**2-Level Mode:** Full task checklist embedded in description
+```
+Tool: {mcp_server}/createJiraIssue
+Parameters:
+  - projectKey: {project.key}
+  - issueTypeName: {hierarchy.story_type}
+  - summary: {phase_name}
+  - description: |
+      Phase from spec: {spec_name}
+
+      ## Tasks
+
+      - [x] T001: Initialize pnpm workspace with Nx and NestJS presets
+      - [x] T002: Add root tsconfig.base.json with path aliases
+      - [ ] T003: Configure root eslint.config.mjs
+      ...
   - additional_fields: {defaults.story.custom_fields}
 ```
 
@@ -206,9 +243,9 @@ Parameters:
 | `"Relates"` / `"Blocks"` / etc. | Create issue link from Story to Epic |
 | `"none"` | No link created |
 
-Store each Story key for linking tasks.
+Store each Story key for linking tasks (if 3-level mode).
 
-Display:
+Display (3-level mode):
 ```
 ✅ Created Story: MSATS-101 - Phase 1: Setup (Shared Infrastructure)
    URL: https://your-jira.atlassian.net/browse/MSATS-101
@@ -216,11 +253,28 @@ Display:
    Tasks: 9 tasks to create
 ```
 
+Display (2-level mode):
+```
+✅ Created Story: MSATS-101 - Phase 1: Setup (Shared Infrastructure)
+   URL: https://your-jira.atlassian.net/browse/MSATS-101
+   Linked to Epic via: {relationships.epic_story}
+   Tasks: 9 tasks (embedded in description)
+```
+
 ### 8. Create Individual Jira Issues for EACH Task
 
-**CRITICAL: This step is MANDATORY. You MUST create a separate Jira issue for EVERY task listed in TASKS.md.**
+**⚠️ SKIP THIS STEP IF 2-LEVEL MODE IS ENABLED**
 
-DO NOT skip this step. DO NOT just put tasks in the Story description. Each `- [ ] T001 ...` line in TASKS.md becomes its own Jira issue.
+If `task_type` is empty (`""`) or `"none"`, skip this entire step and proceed to Step 9.
+In 2-level mode, tasks are already embedded in Story descriptions.
+
+---
+
+#### 3-Level Mode Only
+
+**CRITICAL: This step is MANDATORY in 3-level mode. You MUST create a separate Jira issue for EVERY task listed in TASKS.md.**
+
+DO NOT skip this step in 3-level mode. DO NOT just put tasks in the Story description. Each `- [ ] T001 ...` line in TASKS.md becomes its own Jira issue.
 
 **For each task item** (e.g., `- [x] T001 Initialize pnpm workspace...`):
 
@@ -276,7 +330,11 @@ Creating tasks for Story MSATS-101 (Phase 1: Setup):
 
 ### 9. Save Issue Mapping
 
-Save a comprehensive mapping file at `specs/<spec-name>/jira-mapping.json`:
+Save a comprehensive mapping file at `specs/<spec-name>/jira-mapping.json`.
+
+**Include `"mode": "2-level"` or `"mode": "3-level"`** to indicate the hierarchy type used.
+
+#### 3-Level Mode Mapping
 
 ```json
 {
@@ -327,6 +385,7 @@ Save a comprehensive mapping file at `specs/<spec-name>/jira-mapping.json`:
       ]
     }
   ],
+  "mode": "3-level",
   "summary": {
     "total_stories": 10,
     "total_tasks": 94,
@@ -336,13 +395,53 @@ Save a comprehensive mapping file at `specs/<spec-name>/jira-mapping.json`:
 }
 ```
 
+#### 2-Level Mode Mapping
+
+```json
+{
+  "created_at": "2026-01-29T10:30:00Z",
+  "updated_at": "2026-01-29T10:35:00Z",
+  "spec": "001-ts-msa-implementation",
+  "project": "MSATS",
+  "jira_base_url": "https://your-jira.atlassian.net",
+  "mode": "2-level",
+  "epic": {
+    "key": "MSATS-100",
+    "summary": "TypeScript MSA Framework Implementation",
+    "url": "https://your-jira.atlassian.net/browse/MSATS-100"
+  },
+  "stories": [
+    {
+      "key": "MSATS-101",
+      "summary": "Phase 1: Setup (Shared Infrastructure)",
+      "url": "https://your-jira.atlassian.net/browse/MSATS-101",
+      "embedded_tasks": [
+        {"id": "T001", "summary": "Initialize pnpm workspace", "status": "completed"},
+        {"id": "T002", "summary": "Add root tsconfig.base.json", "status": "completed"},
+        {"id": "T003", "summary": "Configure root eslint.config.mjs", "status": "pending"}
+      ]
+    }
+  ],
+  "summary": {
+    "total_stories": 10,
+    "total_embedded_tasks": 94,
+    "completed_tasks": 87,
+    "pending_tasks": 7
+  }
+}
+```
+
+Note: In 2-level mode, `embedded_tasks` contains task metadata without Jira keys (since no Jira issues were created for tasks).
+
 ### 10. Display Summary
 
-Output a complete summary:
+Output a complete summary based on the mode used.
+
+#### 3-Level Mode Summary
 
 ```
 ═══════════════════════════════════════════════════════════════
-✅ Jira Hierarchy Created Successfully!
+✅ Jira Hierarchy Created Successfully! (3-level mode)
 ═══════════════════════════════════════════════════════════════
 
 📋 Project: MSATS
@@ -359,7 +458,7 @@ Stories (10):
 
 Summary:
   • Total Stories: 10
-  • Total Tasks: 94
+  • Total Tasks: 94 (as Jira issues)
   • Completed: 87 (93%)
   • Pending: 7 (7%)
 
@@ -368,6 +467,38 @@ Summary:
 Next steps:
   • View Epic in Jira: https://your-jira.atlassian.net/browse/MSATS-100
   • Sync status later: /speckit.jira.sync-status --spec 001-ts-msa-implementation
+═══════════════════════════════════════════════════════════════
+```
+
+#### 2-Level Mode Summary
+
+```text
+═══════════════════════════════════════════════════════════════
+✅ Jira Hierarchy Created Successfully! (2-level mode)
+═══════════════════════════════════════════════════════════════
+
+📋 Project: MSATS
+📁 Spec: 001-ts-msa-implementation
+
+Epic: MSATS-100 - TypeScript MSA Framework Implementation
+  └── https://your-jira.atlassian.net/browse/MSATS-100
+
+Stories (10):
+  ├── MSATS-101 - Phase 1: Setup (9 tasks embedded)
+  ├── MSATS-102 - Phase 2: Foundational (17 tasks embedded)
+  ├── MSATS-103 - Phase 3: User Story 1 (10 tasks embedded)
+  └── ... (7 more)
+
+Summary:
+  • Mode: 2-level (Epic → Stories only)
+  • Total Stories: 10
+  • Total Tasks: 94 (embedded in Story descriptions)
+
+💾 Mapping saved to: specs/001-ts-msa-implementation/jira-mapping.json
+
+Next steps:
+  • View Epic in Jira: https://your-jira.atlassian.net/browse/MSATS-100
+  • Tasks are tracked as checklists within Stories
 ═══════════════════════════════════════════════════════════════
 ```
 
@@ -381,11 +512,11 @@ Edit `.specify/extensions/jira/jira-config.yml` to customize:
 | `project.key` | Jira project key | (required) |
 | `hierarchy.epic_type` | Issue type for SPEC.md | "Epic" |
 | `hierarchy.story_type` | Issue type for Phases | "Story" |
-| `hierarchy.task_type` | Issue type for Tasks | "Sub-task" |
-| `hierarchy.link_type` | Link type (if not subtask) | "Relates" |
+| `hierarchy.task_type` | Issue type for Tasks. Set to `""` or `"none"` for 2-level mode | "Task" |
+| `hierarchy.relationships.*` | Link types between issues | See docs |
 | `defaults.epic.labels` | Labels for Epic | [] |
 | `defaults.story.labels` | Labels for Stories | [] |
-| `defaults.task.labels` | Labels for Tasks | [] |
+| `defaults.task.labels` | Labels for Tasks (3-level only) | [] |
 
 ## Troubleshooting
 

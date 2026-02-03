@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: "jira"
   name: "Jira Integration"
-  version: "2.0.0"
+  version: "2.1.0"
   description: "Create Jira Epics, Stories, and Issues from spec-kit artifacts"
   author: "Michal Bachorik"
   repository: "https://github.com/mbachorik/spec-kit-jira"

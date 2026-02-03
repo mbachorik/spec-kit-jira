@@ -5,6 +5,23 @@ All notable changes to the Jira Integration Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-02-03
+
+### Added
+
+- **2-level mode support**: Set `task_type: ""` or `"none"` for Epic → Stories only hierarchy
+  - Tasks are embedded as checklists in Story descriptions
+  - No individual Task issues created in Jira
+  - Useful for simpler projects or when tasks don't need individual tracking
+- Updated jira-mapping.json structure with `"mode": "2-level"` or `"mode": "3-level"` indicator
+- `embedded_tasks` array in 2-level mode mapping (task metadata without Jira keys)
+
+### Changed
+
+- Story description now includes full task checklist when in 2-level mode
+- Summary output indicates mode used (2-level vs 3-level)
+- Config template includes 2-level mode documentation
+
 ## [2.0.0] - 2026-02-01
 
 ### Added
@@ -125,6 +142,7 @@ To use new config format:
 
 ---
 
+[2.1.0]: https://github.com/mbachorik/spec-kit-jira/releases/tag/v2.1.0
 [2.0.0]: https://github.com/mbachorik/spec-kit-jira/releases/tag/v2.0.0
 [1.2.0]: https://github.com/mbachorik/spec-kit-jira/releases/tag/v1.2.0
 [1.1.0]: https://github.com/mbachorik/spec-kit-jira/releases/tag/v1.1.0

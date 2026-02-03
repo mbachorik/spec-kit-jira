@@ -14,6 +14,8 @@ hierarchy:
   epic_type: "Epic"       # Issue type for SPEC.md
   story_type: "Story"     # Issue type for Phase headers in TASKS.md
   task_type: "Task"       # Issue type for task items (can be "Task", "Sub-task", etc.)
+                          # Set to "" or "none" for 2-level mode (Epic → Stories only)
+                          # In 2-level mode, tasks are embedded as checklists in Story descriptions
 
   # Relationships between issues
   # Options for each: "Parent", "Epic Link", "Relates", "Blocks", "Implements", "is child of", "none"
