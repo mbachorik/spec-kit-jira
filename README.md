@@ -1,7 +1,7 @@
 # Spec Kit - Jira Integration Extension
 
 [![Spec Kit](https://img.shields.io/badge/spec--kit-extension-blue?logo=github)](https://github.com/github/spec-kit)
-[![Version](https://img.shields.io/badge/version-2.0.0-green)](https://github.com/mbachorik/spec-kit-jira/releases)
+[![Version](https://img.shields.io/badge/version-2.1.0-green)](https://github.com/mbachorik/spec-kit-jira/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Issues](https://img.shields.io/github/issues/mbachorik/spec-kit-jira)](https://github.com/mbachorik/spec-kit-jira/issues)
 
@@ -9,7 +9,8 @@ Create Jira Epics, Stories, and Issues directly from your spec-kit specification
 
 ## Features
 
-- **Automatic Hierarchy Creation**: Convert SPEC.md → Epic and TASKS.md → Tasks/Subtasks
+- **3-Level Hierarchy**: Convert SPEC.md → Epic, Phase headers → Stories, Tasks → Task issues
+- **2-Level Mode**: Optional simplified mode (Epic → Stories with embedded task checklists)
 - **Custom Field Discovery**: Discover and configure Jira custom fields
 - **Status Synchronization**: Keep local task status in sync with Jira
 - **Flexible Configuration**: Project-level config with local overrides and environment variables
@@ -65,12 +66,22 @@ project:
   key: "MSATS"
 
 hierarchy:
-  issue_type: "subtask"  # or "task", "story"
-  link_type: "Relates"   # or "Blocks", "Implements"
+  epic_type: "Epic"       # Issue type for SPEC.md
+  story_type: "Story"     # Issue type for Phase headers
+  task_type: "Task"       # Issue type for tasks (set to "" for 2-level mode)
+
+  relationships:
+    epic_story: "Epic Link"   # How Story links to Epic
+    story_task: "Relates"     # How Task links to Story
+    epic_task: "Epic Link"    # Direct Task-Epic link
 
 defaults:
   epic:
     labels: ["spec-driven", "automated"]
+    custom_fields: {}
+
+  story:
+    labels: []
     custom_fields: {}
 
   task:
@@ -94,9 +105,15 @@ This will:
 
 1. Auto-detect spec from git branch name, current directory, or prompt if multiple exist
 2. Create a Jira Epic from `specs/<spec-name>/spec.md`
-3. Create Tasks/Subtasks from `specs/<spec-name>/tasks.md`
-4. Link all tasks to the epic
-5. Save mapping to `specs/<spec-name>/jira-mapping.json`
+3. Create Stories from Phase headers in `specs/<spec-name>/tasks.md` (e.g., `## Phase 1: ...`)
+4. Create Tasks from task items under each Phase (e.g., `- [ ] T001 ...`)
+5. Link all issues according to configured relationships
+6. Save mapping to `specs/<spec-name>/jira-mapping.json`
+
+**Hierarchy Modes:**
+
+- **3-level mode** (default): Epic → Stories → Tasks
+- **2-level mode** (set `task_type: ""`): Epic → Stories with task checklists embedded in descriptions
 
 To specify a particular spec:
 
@@ -209,8 +226,18 @@ project:
 
 # Issue Hierarchy
 hierarchy:
-  issue_type: "subtask"
-  link_type: "Relates"
+  # Issue types to create
+  epic_type: "Epic"       # Issue type for SPEC.md
+  story_type: "Story"     # Issue type for Phase headers in TASKS.md
+  task_type: "Task"       # Issue type for task items
+                          # Set to "" or "none" for 2-level mode (Epic → Stories only)
+
+  # Relationships between issues
+  # Options: "Parent", "Epic Link", "Relates", "Blocks", "Implements", "is child of", "none"
+  relationships:
+    epic_story: "Epic Link"   # How Story connects to Epic
+    story_task: "Relates"     # How Task connects to Story
+    epic_task: "Epic Link"    # Direct Task-to-Epic link
 
 # Default Values
 defaults:
@@ -228,15 +255,16 @@ defaults:
     custom_fields:
       customfield_10002: 2  # Story points
 
-# Field Mappings
+# Field Mappings (discovered via /speckit.jira.discover-fields)
 field_mappings:
   spec_version: "customfield_10005"
   team: "customfield_10006"
 
-# Workflow Configuration
-workflow:
-  done_status: "Done"
-  done_transition: "Done"
+# Status Mapping for sync-status command
+status_mapping:
+  completed: "Done"           # [x] in TASKS.md
+  pending: "To Do"            # [ ] in TASKS.md
+  in_progress: "In Progress"  # [~] in TASKS.md (optional)
 ```
 
 ### Environment Variable Overrides
@@ -248,11 +276,15 @@ export SPECKIT_JIRA_MCP_SERVER="atlassian"
 # Override project key
 export SPECKIT_JIRA_PROJECT_KEY="DEVTEST"
 
-# Override issue type
-export SPECKIT_JIRA_ISSUE_TYPE="task"
+# Override issue types
+export SPECKIT_JIRA_EPIC_TYPE="Epic"
+export SPECKIT_JIRA_STORY_TYPE="Story"
+export SPECKIT_JIRA_TASK_TYPE="Task"
 
-# Override link type
-export SPECKIT_JIRA_LINK_TYPE="Blocks"
+# Override relationships
+export SPECKIT_JIRA_EPIC_STORY_RELATIONSHIP="Epic Link"
+export SPECKIT_JIRA_STORY_TASK_RELATIONSHIP="Relates"
+export SPECKIT_JIRA_EPIC_TASK_RELATIONSHIP="Epic Link"
 ```
 
 ### Local Overrides (Gitignored)
@@ -266,25 +298,38 @@ project:
 
 ## Task Completion Markers
 
-Mark tasks as complete in TASKS.md using:
+Mark tasks in TASKS.md using checkbox syntax:
 
-1. **Checkmark emoji**: `## Task 1: Title ✅`
-2. **Checkbox**: `## Task 1: Title [x]`
-3. **Status prefix**: `## Task 1: [DONE] Title`
+| Marker  | Status      | Jira Status (default) |
+| ------- | ----------- | --------------------- |
+| `- [x]` | Completed   | Done                  |
+| `- [ ]` | Pending     | To Do                 |
+| `- [~]` | In Progress | In Progress           |
 
 Example:
 
 ```markdown
 # Tasks
 
-## Task 1: Implement authentication ✅
-Description of completed task
+## Phase 1: Authentication
 
-## Task 2: Add error handling
-In-progress task
+- [x] T001: Implement login endpoint
+- [~] T002: Add session management
+- [ ] T003: Write authentication tests
 
-## Task 3: [DONE] Write tests
-Another completed task
+## Phase 2: Error Handling
+
+- [ ] T004: Add global error handler
+- [ ] T005: Implement retry logic
+```
+
+Configure status mappings in `jira-config.yml`:
+
+```yaml
+status_mapping:
+  completed: "Done"
+  pending: "To Do"
+  in_progress: "In Progress"
 ```
 
 ## Troubleshooting
@@ -329,11 +374,20 @@ Then:
 > /speckit.jira.specstoissues
 ```
 
-### Example 2: With Custom Fields
+### Example 2: With Custom Fields and 3-Level Hierarchy
 
 ```yaml
 project:
   key: "MSATS"
+
+hierarchy:
+  epic_type: "Epic"
+  story_type: "Story"
+  task_type: "Task"
+  relationships:
+    epic_story: "Epic Link"
+    story_task: "Relates"
+    epic_task: "Epic Link"
 
 defaults:
   task:
@@ -342,7 +396,23 @@ defaults:
       customfield_10004: "Backend Team"
 ```
 
-### Example 3: Complete Workflow
+### Example 3: 2-Level Mode (Epic → Stories Only)
+
+```yaml
+project:
+  key: "SIMPLE"
+
+hierarchy:
+  epic_type: "Epic"
+  story_type: "Story"
+  task_type: ""  # Empty = 2-level mode, tasks embedded as checklists
+
+defaults:
+  story:
+    labels: ["auto-generated"]
+```
+
+### Example 4: Complete Workflow
 
 ```bash
 # 1. Create spec and tasks
