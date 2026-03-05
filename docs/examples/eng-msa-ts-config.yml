@@ -1,8 +1,8 @@
-# Example Jira Configuration for eng-msa-ts Project
+# Example Jira Configuration for a TypeScript Microservices Project
 
 # Jira Project
 project:
-  key: "MSATS" # Microservices @ Stats Perform
+  key: "MSA" # Replace with your project key
 
 # Issue Hierarchy
 hierarchy:
