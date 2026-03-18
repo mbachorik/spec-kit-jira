@@ -179,7 +179,7 @@ if [ ! -f "$tasks_file" ]; then
 fi
 
 # Parse completed tasks (pseudo-code)
-# completed_tasks=$(grep -E "^## Task.*✅|^## Task.*\[x\]" "$tasks_file" | sed 's/^## Task \([0-9]*\).*/\1/')
+# completed_tasks=$(grep -E "^## Task.*✅|^## Task.*\\[x\\]" "$tasks_file" | sed 's/^## Task \\([0-9]*\\).*/\\1/')
 
 echo "📝 Parsing task completion from $tasks_file..."
 ```
