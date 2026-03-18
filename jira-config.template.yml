@@ -6,35 +6,43 @@ mcp_server: "atlassian"
 
 # Jira Project Configuration
 project:
-  key: ""  # Your Jira project key (e.g., "MSATS", "DEVTEST")
+  key: ""  # Your Jira project key (e.g., "PROJ", "DEVTEST")
 
-# Issue Hierarchy Configuration
-hierarchy:
-  # Issue types to create
-  epic_type: "Epic"       # Issue type for SPEC.md
-  story_type: "Story"     # Issue type for Phase headers in TASKS.md
-  task_type: "Task"       # Issue type for task items (can be "Task", "Sub-task", etc.)
-                          # Set to "" or "none" for 2-level mode (Epic → Stories only)
-                          # In 2-level mode, tasks are embedded as checklists in Story descriptions
+# Artifact Mapping Configuration
+# Defines how spec-kit artifacts map to Jira issue types
+mapping:
+  # Spec artifact mapping (highest level - from SPEC.md)
+  # Options: Any Jira issue type name (e.g., "Epic", "Initiative")
+  spec_artifact: "Epic"
+
+  # Phase artifact mapping (middle level - Phase headers in TASKS.md)
+  # Options: Any Jira issue type name (e.g., "Story", "Task", "Feature")
+  phase_artifact: "Story"
+
+  # Task artifact mapping (lowest level - task items under each Phase)
+  # Options: Any Jira issue type name (e.g., "Task", "Sub-task")
+  # Set to "" or "none" for 2-level mode (Spec → Phases only)
+  # In 2-level mode, tasks are embedded as checklists in Phase descriptions
+  task_artifact: "Task"
 
   # Relationships between issues
   # Options for each: "Parent", "Epic Link", "Relates", "Blocks", "Implements", "is child of", "none"
   relationships:
-    # How Story connects to Epic (default: "Epic Link" for Company-managed)
-    epic_story: "Epic Link"
+    # How Phase connects to Spec (default: "Epic Link" for Company-managed)
+    spec_phase: "Epic Link"
 
-    # How Task connects to Story (default: "Relates" for Company-managed)
-    story_task: "Relates"
+    # How Task connects to Phase (default: "Relates" for Company-managed)
+    phase_task: "Relates"
 
-    # Direct Task-to-Epic link (default: "Epic Link" for Company-managed)
-    epic_task: "Epic Link"
+    # Direct Task-to-Spec link (default: "Epic Link" for Company-managed)
+    spec_task: "Epic Link"
 
 # Default Values for Issue Creation
 defaults:
-  epic:
+  spec:
     labels: []
     custom_fields: {}
-  story:
+  phase:
     labels: []
     custom_fields: {}
   task:
@@ -53,9 +61,9 @@ status_mapping:
 # Environment Variable Overrides:
 # - SPECKIT_JIRA_MCP_SERVER
 # - SPECKIT_JIRA_PROJECT_KEY
-# - SPECKIT_JIRA_EPIC_TYPE
-# - SPECKIT_JIRA_STORY_TYPE
-# - SPECKIT_JIRA_TASK_TYPE
-# - SPECKIT_JIRA_EPIC_STORY_RELATIONSHIP
-# - SPECKIT_JIRA_STORY_TASK_RELATIONSHIP
-# - SPECKIT_JIRA_EPIC_TASK_RELATIONSHIP
+# - SPECKIT_JIRA_SPEC_ARTIFACT
+# - SPECKIT_JIRA_PHASE_ARTIFACT
+# - SPECKIT_JIRA_TASK_ARTIFACT
+# - SPECKIT_JIRA_SPEC_PHASE_RELATIONSHIP
+# - SPECKIT_JIRA_PHASE_TASK_RELATIONSHIP
+# - SPECKIT_JIRA_SPEC_TASK_RELATIONSHIP

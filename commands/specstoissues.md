@@ -46,53 +46,56 @@ Read the specification directory and validate that both `spec.md` and `tasks.md`
 
 Load the Jira configuration from `.specify/extensions/jira/jira-config.yml`:
 
-**Issue Types:**
-- `hierarchy.epic_type`: Issue type for SPEC.md (default: "Epic")
-- `hierarchy.story_type`: Issue type for Phase headers (default: "Story")
-- `hierarchy.task_type`: Issue type for task items (default: "Task"). Set to `""` or `"none"` for 2-level mode (Epic → Stories only)
+**Artifact Mapping:**
+- `mapping.spec_artifact`: Issue type for SPEC.md (default: "Epic")
+- `mapping.phase_artifact`: Issue type for Phase headers (default: "Story")
+- `mapping.task_artifact`: Issue type for task items (default: "Task"). Set to `""` or `"none"` for 2-level mode (Spec → Phases only)
 
 **2-Level Mode:**
 
-When `task_type` is empty (`""`) or `"none"`, the extension operates in 2-level mode:
+When `task_artifact` is empty (`""`) or `"none"`, the extension operates in 2-level mode:
 
-- Only Epic and Stories are created as Jira issues
-- Tasks are embedded as a checklist in the Story description
+- Only Spec and Phase issues are created in Jira
+- Tasks are embedded as a checklist in the Phase description
 - No individual Task issues are created
 - Useful for simpler projects or when tasks don't need individual tracking
 
 **Relationships:**
-- `hierarchy.relationships.epic_story`: How Story links to Epic (default: "Epic Link")
-- `hierarchy.relationships.story_task`: How Task links to Story (default: "Relates")
-- `hierarchy.relationships.epic_task`: Direct Task-Epic link (default: "Epic Link")
+- `mapping.relationships.spec_phase`: How Phase links to Spec (default: "Epic Link")
+- `mapping.relationships.phase_task`: How Task links to Phase (default: "Relates")
+- `mapping.relationships.spec_task`: Direct Task-Spec link (default: "Epic Link")
 
 Relationship options: `"Parent"`, `"Epic Link"`, `"Relates"`, `"Blocks"`, `"Implements"`, `"is child of"`, `"none"`
 
 **Backward Compatibility:**
 
 If old config structure is found:
-- `hierarchy.issue_type` → maps to `hierarchy.task_type`
-- `hierarchy.link_type` → maps to `hierarchy.relationships.story_task`
-- Missing relationship configs use defaults
+- `hierarchy.epic_type` → maps to `mapping.spec_artifact`
+- `hierarchy.story_type` → maps to `mapping.phase_artifact`
+- `hierarchy.task_type` → maps to `mapping.task_artifact`
+- `hierarchy.relationships.epic_story` → maps to `mapping.relationships.spec_phase`
+- `hierarchy.relationships.story_task` → maps to `mapping.relationships.phase_task`
+- `hierarchy.relationships.epic_task` → maps to `mapping.relationships.spec_task`
 
 **Environment variable overrides:**
 - `SPECKIT_JIRA_PROJECT_KEY` → `project.key`
-- `SPECKIT_JIRA_EPIC_TYPE` → `hierarchy.epic_type`
-- `SPECKIT_JIRA_STORY_TYPE` → `hierarchy.story_type`
-- `SPECKIT_JIRA_TASK_TYPE` → `hierarchy.task_type`
-- `SPECKIT_JIRA_EPIC_STORY_RELATIONSHIP` → `hierarchy.relationships.epic_story`
-- `SPECKIT_JIRA_STORY_TASK_RELATIONSHIP` → `hierarchy.relationships.story_task`
+- `SPECKIT_JIRA_SPEC_ARTIFACT` → `mapping.spec_artifact`
+- `SPECKIT_JIRA_PHASE_ARTIFACT` → `mapping.phase_artifact`
+- `SPECKIT_JIRA_TASK_ARTIFACT` → `mapping.task_artifact`
+- `SPECKIT_JIRA_SPEC_PHASE_RELATIONSHIP` → `mapping.relationships.spec_phase`
+- `SPECKIT_JIRA_PHASE_TASK_RELATIONSHIP` → `mapping.relationships.phase_task`
 
 ### 3. Parse SPEC.md
 
 Read and parse the specification file to extract:
 
-1. **Title**: First H1 heading (e.g., `# TypeScript MSA Framework Implementation`)
+1. **Title**: First H1 heading (e.g., `# User Authentication System`)
 2. **Summary**: Content under the first heading or "Overview" section
 3. **Full content**: Entire spec for the Epic description
 
 Example SPEC.md structure:
 ```markdown
-# TypeScript MSA Framework Implementation
+# User Authentication System
 
 ## Overview
 This specification defines the implementation of...
@@ -103,7 +106,7 @@ This specification defines the implementation of...
 ```
 
 Extract:
-- Epic title: "TypeScript MSA Framework Implementation"
+- Epic title: "User Authentication System"
 - Epic description: Full spec content (or truncated if too long for Jira)
 
 ### 4. Parse TASKS.md for Phases and Tasks
@@ -115,7 +118,7 @@ Read and parse the tasks file to extract the phase/task hierarchy:
 
 Example TASKS.md structure:
 ```markdown
-# Tasks: TypeScript MSA Framework Implementation
+# Tasks: User Authentication System
 
 ## Phase 1: Setup (Shared Infrastructure)
 
@@ -170,24 +173,24 @@ If it exists:
 
 ### 6. Create Epic from SPEC.md
 
-Use the configured MCP server to create an Epic:
+Use the configured MCP server to create the Spec issue:
 
 ```
 Tool: {mcp_server}/createJiraIssue
 Parameters:
   - projectKey: {project.key}
-  - issueTypeName: {hierarchy.epic_type}
+  - issueTypeName: {mapping.spec_artifact}
   - summary: {spec_title}
   - description: {spec_content}
-  - additional_fields: {defaults.epic.custom_fields}
+  - additional_fields: {defaults.spec.custom_fields}
 ```
 
-Store the created Epic key (e.g., "MSATS-100") for linking stories.
+Store the created Epic key (e.g., "PROJ-100") for linking stories.
 
 Display:
 ```
-✅ Created Epic: MSATS-100 - TypeScript MSA Framework Implementation
-   URL: https://your-jira.atlassian.net/browse/MSATS-100
+✅ Created Epic: PROJ-100 - User Authentication System
+   URL: https://your-jira.atlassian.net/browse/PROJ-100
 ```
 
 ### 7. Create Stories for Each Phase
@@ -197,22 +200,22 @@ For each phase extracted from TASKS.md, create a Story and link it to the Epic.
 **First, check if 2-level mode is enabled:**
 
 ```
-is_two_level_mode = (task_type == "" OR task_type == "none" OR task_type is not set)
+is_two_level_mode = (task_artifact == "" OR task_artifact == "none" OR task_artifact is not set)
 ```
 
-**Step 7a: Create the Story**
+**Step 7a: Create the Phase Issue**
 
-The Story description varies based on mode:
+The Phase description varies based on mode:
 
 **3-Level Mode (default):** Brief description with task summary
 ```
 Tool: {mcp_server}/createJiraIssue
 Parameters:
   - projectKey: {project.key}
-  - issueTypeName: {hierarchy.story_type}
+  - issueTypeName: {mapping.phase_artifact}
   - summary: {phase_name}
   - description: "Phase from spec: {spec_name}\n\nTasks:\n- T001: ...\n- T002: ..."
-  - additional_fields: {defaults.story.custom_fields}
+  - additional_fields: {defaults.phase.custom_fields}
 ```
 
 **2-Level Mode:** Full task checklist embedded in description
@@ -220,7 +223,7 @@ Parameters:
 Tool: {mcp_server}/createJiraIssue
 Parameters:
   - projectKey: {project.key}
-  - issueTypeName: {hierarchy.story_type}
+  - issueTypeName: {mapping.phase_artifact}
   - summary: {phase_name}
   - description: |
       Phase from spec: {spec_name}
@@ -231,33 +234,33 @@ Parameters:
       - [x] T002: Add root tsconfig.base.json with path aliases
       - [ ] T003: Configure root eslint.config.mjs
       ...
-  - additional_fields: {defaults.story.custom_fields}
+  - additional_fields: {defaults.phase.custom_fields}
 ```
 
-**Step 7b: Link Story to Epic based on `relationships.epic_story`**
+**Step 7b: Link Phase to Spec based on `relationships.spec_phase`**
 
-| epic_story value | Action |
+| spec_phase value | Action |
 |------------------|--------|
-| `"Parent"` | Set Story's parent field to Epic key |
-| `"Epic Link"` | Set Epic Link custom field on Story to Epic key |
-| `"Relates"` / `"Blocks"` / etc. | Create issue link from Story to Epic |
+| `"Parent"` | Set Phase's parent field to Spec key |
+| `"Epic Link"` | Set Epic Link custom field on Phase to Spec key |
+| `"Relates"` / `"Blocks"` / etc. | Create issue link from Phase to Spec |
 | `"none"` | No link created |
 
-Store each Story key for linking tasks (if 3-level mode).
+Store each Phase key for linking tasks (if 3-level mode).
 
 Display (3-level mode):
 ```
-✅ Created Story: MSATS-101 - Phase 1: Setup (Shared Infrastructure)
-   URL: https://your-jira.atlassian.net/browse/MSATS-101
-   Linked to Epic via: {relationships.epic_story}
+✅ Created Phase: PROJ-101 - Phase 1: Setup (Shared Infrastructure)
+   URL: https://your-jira.atlassian.net/browse/PROJ-101
+   Linked to Spec via: {relationships.spec_phase}
    Tasks: 9 tasks to create
 ```
 
 Display (2-level mode):
 ```
-✅ Created Story: MSATS-101 - Phase 1: Setup (Shared Infrastructure)
-   URL: https://your-jira.atlassian.net/browse/MSATS-101
-   Linked to Epic via: {relationships.epic_story}
+✅ Created Phase: PROJ-101 - Phase 1: Setup (Shared Infrastructure)
+   URL: https://your-jira.atlassian.net/browse/PROJ-101
+   Linked to Spec via: {relationships.spec_phase}
    Tasks: 9 tasks (embedded in description)
 ```
 
@@ -265,8 +268,8 @@ Display (2-level mode):
 
 **⚠️ SKIP THIS STEP IF 2-LEVEL MODE IS ENABLED**
 
-If `task_type` is empty (`""`) or `"none"`, skip this entire step and proceed to Step 9.
-In 2-level mode, tasks are already embedded in Story descriptions.
+If `task_artifact` is empty (`""`) or `"none"`, skip this entire step and proceed to Step 9.
+In 2-level mode, tasks are already embedded in Phase descriptions.
 
 ---
 
@@ -274,7 +277,7 @@ In 2-level mode, tasks are already embedded in Story descriptions.
 
 **CRITICAL: This step is MANDATORY in 3-level mode. You MUST create a separate Jira issue for EVERY task listed in TASKS.md.**
 
-DO NOT skip this step in 3-level mode. DO NOT just put tasks in the Story description. Each `- [ ] T001 ...` line in TASKS.md becomes its own Jira issue.
+DO NOT skip this step in 3-level mode. DO NOT just put tasks in the Phase description. Each `- [ ] T001 ...` line in TASKS.md becomes its own Jira issue.
 
 **For each task item** (e.g., `- [x] T001 Initialize pnpm workspace...`):
 
@@ -286,42 +289,42 @@ Call the MCP tool to create the task:
 Tool: {mcp_server}/createJiraIssue
 Parameters:
   - projectKey: {project.key}
-  - issueTypeName: {hierarchy.task_type}
+  - issueTypeName: {mapping.task_artifact}
   - summary: "{task_id}: {task_description}"
   - description: "Task from spec: {spec_name}\nPhase: {phase_name}\nStatus in spec-kit: {task_status}"
   - additional_fields: {defaults.task.custom_fields}
 ```
 
-**Step 8b: Link Task to Story based on `relationships.story_task`**
+**Step 8b: Link Task to Phase based on `relationships.phase_task`**
 
-| story_task value | Action |
+| phase_task value | Action |
 |------------------|--------|
-| `"Parent"` | Set Task's parent field to Story key |
-| `"Relates"` / `"Blocks"` / etc. | Create issue link from Task to Story |
+| `"Parent"` | Set Task's parent field to Phase key |
+| `"Relates"` / `"Blocks"` / etc. | Create issue link from Task to Phase |
 | `"none"` | No link created |
 
-**Step 8c: Link Task to Epic based on `relationships.epic_task`**
+**Step 8c: Link Task to Spec based on `relationships.spec_task`**
 
-| epic_task value | Action |
+| spec_task value | Action |
 |-----------------|--------|
-| `"Epic Link"` | Set Epic Link custom field on Task to Epic key |
-| `"Relates"` / `"Blocks"` / etc. | Create issue link from Task to Epic |
-| `"none"` | No direct Task-Epic link |
+| `"Epic Link"` | Set Epic Link custom field on Task to Spec key |
+| `"Relates"` / `"Blocks"` / etc. | Create issue link from Task to Spec |
+| `"none"` | No direct Task-Spec link |
 
-**Repeat steps 8a-8c for EVERY task** in the phase before moving to the next Story.
+**Repeat steps 8a-8c for EVERY task** in the phase before moving to the next Phase.
 
 Example: If Phase 1 has 9 tasks (T001-T009), you create 9 Jira issues:
 ```
-Creating tasks for Story MSATS-101 (Phase 1: Setup):
-  ├── ✅ MSATS-110 - T001: Initialize pnpm workspace
-  ├── ✅ MSATS-111 - T002: Add root tsconfig.base.json
-  ├── ✅ MSATS-112 - T003: Configure root eslint.config.mjs
-  ├── ✅ MSATS-113 - T004: Configure prettier
-  ├── ✅ MSATS-114 - T005: Add root vitest.config.ts
-  ├── ✅ MSATS-115 - T006: Add .npmrc
-  ├── ✅ MSATS-116 - T007: Add Nx workspace config
-  ├── ✅ MSATS-117 - T008: Add workspace lint/test scripts
-  └── ✅ MSATS-118 - T009: Add .gitignore updates
+Creating tasks for Story PROJ-101 (Phase 1: Setup):
+  ├── ✅ PROJ-110 - T001: Initialize pnpm workspace
+  ├── ✅ PROJ-111 - T002: Add root tsconfig.base.json
+  ├── ✅ PROJ-112 - T003: Configure root eslint.config.mjs
+  ├── ✅ PROJ-113 - T004: Configure prettier
+  ├── ✅ PROJ-114 - T005: Add root vitest.config.ts
+  ├── ✅ PROJ-115 - T006: Add .npmrc
+  ├── ✅ PROJ-116 - T007: Add Nx workspace config
+  ├── ✅ PROJ-117 - T008: Add workspace lint/test scripts
+  └── ✅ PROJ-118 - T009: Add .gitignore updates
 
 9 tasks created for Phase 1
 ```
@@ -340,47 +343,47 @@ Save a comprehensive mapping file at `specs/<spec-name>/jira-mapping.json`.
 {
   "created_at": "2026-01-29T10:30:00Z",
   "updated_at": "2026-01-29T10:35:00Z",
-  "spec": "001-ts-msa-implementation",
-  "project": "MSATS",
+  "spec": "001-user-auth",
+  "project": "PROJ",
   "jira_base_url": "https://your-jira.atlassian.net",
   "epic": {
-    "key": "MSATS-100",
-    "summary": "TypeScript MSA Framework Implementation",
-    "url": "https://your-jira.atlassian.net/browse/MSATS-100"
+    "key": "PROJ-100",
+    "summary": "User Authentication System",
+    "url": "https://your-jira.atlassian.net/browse/PROJ-100"
   },
   "stories": [
     {
-      "key": "MSATS-101",
+      "key": "PROJ-101",
       "summary": "Phase 1: Setup (Shared Infrastructure)",
-      "url": "https://your-jira.atlassian.net/browse/MSATS-101",
+      "url": "https://your-jira.atlassian.net/browse/PROJ-101",
       "tasks": [
         {
-          "key": "MSATS-110",
+          "key": "PROJ-110",
           "id": "T001",
           "summary": "Initialize pnpm workspace with Nx and NestJS presets",
           "status": "completed",
-          "url": "https://your-jira.atlassian.net/browse/MSATS-110"
+          "url": "https://your-jira.atlassian.net/browse/PROJ-110"
         },
         {
-          "key": "MSATS-111",
+          "key": "PROJ-111",
           "id": "T002",
           "summary": "Add root tsconfig.base.json with path aliases",
           "status": "completed",
-          "url": "https://your-jira.atlassian.net/browse/MSATS-111"
+          "url": "https://your-jira.atlassian.net/browse/PROJ-111"
         }
       ]
     },
     {
-      "key": "MSATS-102",
+      "key": "PROJ-102",
       "summary": "Phase 2: Foundational (Blocking Prerequisites)",
-      "url": "https://your-jira.atlassian.net/browse/MSATS-102",
+      "url": "https://your-jira.atlassian.net/browse/PROJ-102",
       "tasks": [
         {
-          "key": "MSATS-120",
+          "key": "PROJ-120",
           "id": "T010",
           "summary": "Generate libs/core scaffold",
           "status": "completed",
-          "url": "https://your-jira.atlassian.net/browse/MSATS-120"
+          "url": "https://your-jira.atlassian.net/browse/PROJ-120"
         }
       ]
     }
@@ -401,20 +404,20 @@ Save a comprehensive mapping file at `specs/<spec-name>/jira-mapping.json`.
 {
   "created_at": "2026-01-29T10:30:00Z",
   "updated_at": "2026-01-29T10:35:00Z",
-  "spec": "001-ts-msa-implementation",
-  "project": "MSATS",
+  "spec": "001-user-auth",
+  "project": "PROJ",
   "jira_base_url": "https://your-jira.atlassian.net",
   "mode": "2-level",
   "epic": {
-    "key": "MSATS-100",
-    "summary": "TypeScript MSA Framework Implementation",
-    "url": "https://your-jira.atlassian.net/browse/MSATS-100"
+    "key": "PROJ-100",
+    "summary": "User Authentication System",
+    "url": "https://your-jira.atlassian.net/browse/PROJ-100"
   },
   "stories": [
     {
-      "key": "MSATS-101",
+      "key": "PROJ-101",
       "summary": "Phase 1: Setup (Shared Infrastructure)",
-      "url": "https://your-jira.atlassian.net/browse/MSATS-101",
+      "url": "https://your-jira.atlassian.net/browse/PROJ-101",
       "embedded_tasks": [
         {"id": "T001", "summary": "Initialize pnpm workspace", "status": "completed"},
         {"id": "T002", "summary": "Add root tsconfig.base.json", "status": "completed"},
@@ -444,16 +447,16 @@ Output a complete summary based on the mode used.
 ✅ Jira Hierarchy Created Successfully! (3-level mode)
 ═══════════════════════════════════════════════════════════════
 
-📋 Project: MSATS
-📁 Spec: 001-ts-msa-implementation
+📋 Project: PROJ
+📁 Spec: 001-user-auth
 
-Epic: MSATS-100 - TypeScript MSA Framework Implementation
-  └── https://your-jira.atlassian.net/browse/MSATS-100
+Epic: PROJ-100 - User Authentication System
+  └── https://your-jira.atlassian.net/browse/PROJ-100
 
 Stories (10):
-  ├── MSATS-101 - Phase 1: Setup (9 tasks)
-  ├── MSATS-102 - Phase 2: Foundational (17 tasks)
-  ├── MSATS-103 - Phase 3: User Story 1 (10 tasks)
+  ├── PROJ-101 - Phase 1: Setup (9 tasks)
+  ├── PROJ-102 - Phase 2: Foundational (17 tasks)
+  ├── PROJ-103 - Phase 3: User Story 1 (10 tasks)
   └── ... (7 more)
 
 Summary:
@@ -462,11 +465,11 @@ Summary:
   • Completed: 87 (93%)
   • Pending: 7 (7%)
 
-💾 Mapping saved to: specs/001-ts-msa-implementation/jira-mapping.json
+💾 Mapping saved to: specs/001-user-auth/jira-mapping.json
 
 Next steps:
-  • View Epic in Jira: https://your-jira.atlassian.net/browse/MSATS-100
-  • Sync status later: /speckit.jira.sync-status --spec 001-ts-msa-implementation
+  • View Epic in Jira: https://your-jira.atlassian.net/browse/PROJ-100
+  • Sync status later: /speckit.jira.sync-status --spec 001-user-auth
 ═══════════════════════════════════════════════════════════════
 ```
 
@@ -477,16 +480,16 @@ Next steps:
 ✅ Jira Hierarchy Created Successfully! (2-level mode)
 ═══════════════════════════════════════════════════════════════
 
-📋 Project: MSATS
-📁 Spec: 001-ts-msa-implementation
+📋 Project: PROJ
+📁 Spec: 001-user-auth
 
-Epic: MSATS-100 - TypeScript MSA Framework Implementation
-  └── https://your-jira.atlassian.net/browse/MSATS-100
+Epic: PROJ-100 - User Authentication System
+  └── https://your-jira.atlassian.net/browse/PROJ-100
 
 Stories (10):
-  ├── MSATS-101 - Phase 1: Setup (9 tasks embedded)
-  ├── MSATS-102 - Phase 2: Foundational (17 tasks embedded)
-  ├── MSATS-103 - Phase 3: User Story 1 (10 tasks embedded)
+  ├── PROJ-101 - Phase 1: Setup (9 tasks embedded)
+  ├── PROJ-102 - Phase 2: Foundational (17 tasks embedded)
+  ├── PROJ-103 - Phase 3: User Story 1 (10 tasks embedded)
   └── ... (7 more)
 
 Summary:
@@ -494,10 +497,10 @@ Summary:
   • Total Stories: 10
   • Total Tasks: 94 (embedded in Story descriptions)
 
-💾 Mapping saved to: specs/001-ts-msa-implementation/jira-mapping.json
+💾 Mapping saved to: specs/001-user-auth/jira-mapping.json
 
 Next steps:
-  • View Epic in Jira: https://your-jira.atlassian.net/browse/MSATS-100
+  • View Epic in Jira: https://your-jira.atlassian.net/browse/PROJ-100
   • Tasks are tracked as checklists within Stories
 ═══════════════════════════════════════════════════════════════
 ```
@@ -510,12 +513,12 @@ Edit `.specify/extensions/jira/jira-config.yml` to customize:
 |------------|-------------|---------|
 | `mcp_server` | MCP server name | "atlassian" |
 | `project.key` | Jira project key | (required) |
-| `hierarchy.epic_type` | Issue type for SPEC.md | "Epic" |
-| `hierarchy.story_type` | Issue type for Phases | "Story" |
-| `hierarchy.task_type` | Issue type for Tasks. Set to `""` or `"none"` for 2-level mode | "Task" |
-| `hierarchy.relationships.*` | Link types between issues | See docs |
-| `defaults.epic.labels` | Labels for Epic | [] |
-| `defaults.story.labels` | Labels for Stories | [] |
+| `mapping.spec_artifact` | Issue type for SPEC.md | "Epic" |
+| `mapping.phase_artifact` | Issue type for Phases | "Story" |
+| `mapping.task_artifact` | Issue type for Tasks. Set to `""` or `"none"` for 2-level mode | "Task" |
+| `mapping.relationships.*` | Link types between issues | See docs |
+| `defaults.spec.labels` | Labels for Spec | [] |
+| `defaults.phase.labels` | Labels for Phases | [] |
 | `defaults.task.labels` | Labels for Tasks (3-level only) | [] |
 
 ## Troubleshooting

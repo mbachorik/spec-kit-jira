@@ -5,6 +5,51 @@ All notable changes to the Jira Integration Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-03-06
+
+### Changed
+
+- **Breaking**: Adopted semantic `*_artifact` naming convention (consistent with spec-kit-linear)
+  - `hierarchy` section renamed to `mapping`
+  - `hierarchy.epic_type` → `mapping.spec_artifact`
+  - `hierarchy.story_type` → `mapping.phase_artifact`
+  - `hierarchy.task_type` → `mapping.task_artifact`
+  - `hierarchy.relationships.epic_story` → `mapping.relationships.spec_phase`
+  - `hierarchy.relationships.story_task` → `mapping.relationships.phase_task`
+  - `hierarchy.relationships.epic_task` → `mapping.relationships.spec_task`
+- **Breaking**: Default labels section renamed
+  - `defaults.epic` → `defaults.spec`
+  - `defaults.story` → `defaults.phase`
+- **Breaking**: Environment variables renamed
+  - `SPECKIT_JIRA_EPIC_TYPE` → `SPECKIT_JIRA_SPEC_ARTIFACT`
+  - `SPECKIT_JIRA_STORY_TYPE` → `SPECKIT_JIRA_PHASE_ARTIFACT`
+  - `SPECKIT_JIRA_TASK_TYPE` → `SPECKIT_JIRA_TASK_ARTIFACT`
+  - `SPECKIT_JIRA_EPIC_STORY_RELATIONSHIP` → `SPECKIT_JIRA_SPEC_PHASE_RELATIONSHIP`
+  - `SPECKIT_JIRA_STORY_TASK_RELATIONSHIP` → `SPECKIT_JIRA_PHASE_TASK_RELATIONSHIP`
+  - `SPECKIT_JIRA_EPIC_TASK_RELATIONSHIP` → `SPECKIT_JIRA_SPEC_TASK_RELATIONSHIP`
+
+### Backward Compatibility
+
+Old v2.x configs are automatically supported:
+
+- `hierarchy.epic_type` → maps to `mapping.spec_artifact`
+- `hierarchy.story_type` → maps to `mapping.phase_artifact`
+- `hierarchy.task_type` → maps to `mapping.task_artifact`
+- `hierarchy.relationships.*` → maps to `mapping.relationships.*`
+- `defaults.epic` → maps to `defaults.spec`
+- `defaults.story` → maps to `defaults.phase`
+
+### Migration
+
+To use new config format:
+
+1. Rename `hierarchy:` to `mapping:`
+2. Rename `epic_type:` to `spec_artifact:`
+3. Rename `story_type:` to `phase_artifact:`
+4. Rename `task_type:` to `task_artifact:`
+5. Update relationship keys: `epic_story` → `spec_phase`, `story_task` → `phase_task`, `epic_task` → `spec_task`
+6. Rename `defaults.epic` → `defaults.spec`, `defaults.story` → `defaults.phase`
+
 ## [2.1.0] - 2026-02-03
 
 ### Added
@@ -142,6 +187,7 @@ To use new config format:
 
 ---
 
+[3.0.0]: https://github.com/mbachorik/spec-kit-jira/releases/tag/v3.0.0
 [2.1.0]: https://github.com/mbachorik/spec-kit-jira/releases/tag/v2.1.0
 [2.0.0]: https://github.com/mbachorik/spec-kit-jira/releases/tag/v2.0.0
 [1.2.0]: https://github.com/mbachorik/spec-kit-jira/releases/tag/v1.2.0

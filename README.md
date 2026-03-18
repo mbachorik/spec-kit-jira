@@ -1,7 +1,7 @@
 # Spec Kit - Jira Integration Extension
 
 [![Spec Kit](https://img.shields.io/badge/spec--kit-extension-blue?logo=github)](https://github.com/github/spec-kit)
-[![Version](https://img.shields.io/badge/version-2.1.0-green)](https://github.com/mbachorik/spec-kit-jira/releases)
+[![Version](https://img.shields.io/badge/version-3.0.0-green)](https://github.com/mbachorik/spec-kit-jira/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Issues](https://img.shields.io/github/issues/mbachorik/spec-kit-jira)](https://github.com/mbachorik/spec-kit-jira/issues)
 
@@ -63,24 +63,24 @@ This will show all available custom fields in your Jira instance and generate co
 # .specify/extensions/jira/jira-config.yml
 
 project:
-  key: "MSATS"
+  key: "PROJ"
 
-hierarchy:
-  epic_type: "Epic"       # Issue type for SPEC.md
-  story_type: "Story"     # Issue type for Phase headers
-  task_type: "Task"       # Issue type for tasks (set to "" for 2-level mode)
+mapping:
+  spec_artifact: "Epic"       # Issue type for SPEC.md
+  phase_artifact: "Story"     # Issue type for Phase headers
+  task_artifact: "Task"       # Issue type for tasks (set to "" for 2-level mode)
 
   relationships:
-    epic_story: "Epic Link"   # How Story links to Epic
-    story_task: "Relates"     # How Task links to Story
-    epic_task: "Epic Link"    # Direct Task-Epic link
+    spec_phase: "Epic Link"   # How Phase links to Spec
+    phase_task: "Relates"     # How Task links to Phase
+    spec_task: "Epic Link"    # Direct Task-Spec link
 
 defaults:
-  epic:
+  spec:
     labels: ["spec-driven", "automated"]
     custom_fields: {}
 
-  story:
+  phase:
     labels: []
     custom_fields: {}
 
@@ -112,8 +112,8 @@ This will:
 
 **Hierarchy Modes:**
 
-- **3-level mode** (default): Epic → Stories → Tasks
-- **2-level mode** (set `task_type: ""`): Epic → Stories with task checklists embedded in descriptions
+- **3-level mode** (default): Spec → Phases → Tasks
+- **2-level mode** (set `task_artifact: ""`): Spec → Phases with task checklists embedded in descriptions
 
 To specify a particular spec:
 
@@ -222,31 +222,31 @@ mcp_server: "atlassian"  # or "jira-mcp-server", "jira", etc.
 
 # Jira Project Configuration
 project:
-  key: "MSATS"
+  key: "PROJ"
 
-# Issue Hierarchy
-hierarchy:
+# Artifact Mapping
+mapping:
   # Issue types to create
-  epic_type: "Epic"       # Issue type for SPEC.md
-  story_type: "Story"     # Issue type for Phase headers in TASKS.md
-  task_type: "Task"       # Issue type for task items
-                          # Set to "" or "none" for 2-level mode (Epic → Stories only)
+  spec_artifact: "Epic"       # Issue type for SPEC.md
+  phase_artifact: "Story"     # Issue type for Phase headers in TASKS.md
+  task_artifact: "Task"       # Issue type for task items
+                              # Set to "" or "none" for 2-level mode (Spec → Phases only)
 
   # Relationships between issues
   # Options: "Parent", "Epic Link", "Relates", "Blocks", "Implements", "is child of", "none"
   relationships:
-    epic_story: "Epic Link"   # How Story connects to Epic
-    story_task: "Relates"     # How Task connects to Story
-    epic_task: "Epic Link"    # Direct Task-to-Epic link
+    spec_phase: "Epic Link"   # How Phase connects to Spec
+    phase_task: "Relates"     # How Task connects to Phase
+    spec_task: "Epic Link"    # Direct Task-to-Spec link
 
 # Default Values
 defaults:
-  epic:
+  spec:
     labels: ["spec-driven", "microservice"]
     custom_fields:
       customfield_10001: "Sprint 1"
 
-  story:
+  phase:
     labels: []
     custom_fields: {}
 
@@ -276,15 +276,15 @@ export SPECKIT_JIRA_MCP_SERVER="atlassian"
 # Override project key
 export SPECKIT_JIRA_PROJECT_KEY="DEVTEST"
 
-# Override issue types
-export SPECKIT_JIRA_EPIC_TYPE="Epic"
-export SPECKIT_JIRA_STORY_TYPE="Story"
-export SPECKIT_JIRA_TASK_TYPE="Task"
+# Override artifact types
+export SPECKIT_JIRA_SPEC_ARTIFACT="Epic"
+export SPECKIT_JIRA_PHASE_ARTIFACT="Story"
+export SPECKIT_JIRA_TASK_ARTIFACT="Task"
 
 # Override relationships
-export SPECKIT_JIRA_EPIC_STORY_RELATIONSHIP="Epic Link"
-export SPECKIT_JIRA_STORY_TASK_RELATIONSHIP="Relates"
-export SPECKIT_JIRA_EPIC_TASK_RELATIONSHIP="Epic Link"
+export SPECKIT_JIRA_SPEC_PHASE_RELATIONSHIP="Epic Link"
+export SPECKIT_JIRA_PHASE_TASK_RELATIONSHIP="Relates"
+export SPECKIT_JIRA_SPEC_TASK_RELATIONSHIP="Epic Link"
 ```
 
 ### Local Overrides (Gitignored)
@@ -378,16 +378,16 @@ Then:
 
 ```yaml
 project:
-  key: "MSATS"
+  key: "PROJ"
 
-hierarchy:
-  epic_type: "Epic"
-  story_type: "Story"
-  task_type: "Task"
+mapping:
+  spec_artifact: "Epic"
+  phase_artifact: "Story"
+  task_artifact: "Task"
   relationships:
-    epic_story: "Epic Link"
-    story_task: "Relates"
-    epic_task: "Epic Link"
+    spec_phase: "Epic Link"
+    phase_task: "Relates"
+    spec_task: "Epic Link"
 
 defaults:
   task:
@@ -396,19 +396,19 @@ defaults:
       customfield_10004: "Backend Team"
 ```
 
-### Example 3: 2-Level Mode (Epic → Stories Only)
+### Example 3: 2-Level Mode (Spec → Phases Only)
 
 ```yaml
 project:
   key: "SIMPLE"
 
-hierarchy:
-  epic_type: "Epic"
-  story_type: "Story"
-  task_type: ""  # Empty = 2-level mode, tasks embedded as checklists
+mapping:
+  spec_artifact: "Epic"
+  phase_artifact: "Story"
+  task_artifact: ""  # Empty = 2-level mode, tasks embedded as checklists
 
 defaults:
-  story:
+  phase:
     labels: ["auto-generated"]
 ```
 

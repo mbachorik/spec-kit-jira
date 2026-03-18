@@ -2,32 +2,42 @@
 
 # Jira Project
 project:
-  key: "MSA" # Replace with your project key
+  key: "DEMO" # Replace with your project key
 
-# Issue Hierarchy
-hierarchy:
-  # Create tasks as subtasks (grouped under epic)
-  issue_type: "subtask"
+# Artifact Mapping
+mapping:
+  # Maps spec-kit artifacts to Jira issue types
+  spec_artifact: "Epic"
+  phase_artifact: "Story"
+  task_artifact: "Sub-task"  # Use Sub-task for grouped tasks under stories
 
-  # Link type for task → epic relationship
-  link_type: "Relates"
+  # Relationships
+  relationships:
+    spec_phase: "Epic Link"
+    phase_task: "Parent"  # Sub-tasks use Parent relationship
+    spec_task: "Epic Link"
 
 # Default Values for Issues
 defaults:
-  # Epic defaults
-  epic:
+  # Spec (Epic) defaults
+  spec:
     labels: ["spec-driven", "microservice", "typescript"]
-    custom_fields:
+    custom_fields: {}
       # Sprint assignment (example - use discover-fields to find actual ID)
       # customfield_10001: "Sprint 42"
 
       # Team assignment
       # customfield_10004: "Platform Engineering"
 
+  # Phase (Story) defaults
+  phase:
+    labels: []
+    custom_fields: {}
+
   # Task/Subtask defaults
   task:
     labels: ["implementation", "automated"]
-    custom_fields:
+    custom_fields: {}
       # Story points (default to 2 per task)
       # customfield_10002: 2
 
@@ -36,20 +46,19 @@ defaults:
 
 # Field Mappings
 # Use these to map spec-kit concepts to Jira custom fields
-field_mappings:
+field_mappings: {}
   # Map spec version to custom field
   # spec_version: "customfield_10005"
 
   # Map implementation phase
   # phase: "customfield_10006"
 
-# Workflow Configuration
-workflow:
-  # Status name for completed tasks
-  done_status: "Done"
+# Status Mapping
+status_mapping:
+  completed: "Done"       # [x] in TASKS.md
+  pending: "To Do"        # [ ] in TASKS.md
+  in_progress: "In Progress"  # [~] in TASKS.md
 
-  # Transition name to use when marking complete
-  done_transition: "Done"
 # Notes:
 # - Run /speckit.jira.discover-fields to find custom field IDs
 # - Uncomment and customize custom_fields as needed

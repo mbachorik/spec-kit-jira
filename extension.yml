@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: "jira"
   name: "Jira Integration"
-  version: "2.1.0"
+  version: "3.0.0"
   description: "Create Jira Epics, Stories, and Issues from spec-kit artifacts"
   author: "Michal Bachorik"
   repository: "https://github.com/mbachorik/spec-kit-jira"
@@ -54,18 +54,18 @@ defaults:
   mcp_server: "atlassian"
   project:
     key: ""
-  hierarchy:
-    epic_type: "Epic"
-    story_type: "Story"
-    task_type: "Task"
+  mapping:
+    spec_artifact: "Epic"
+    phase_artifact: "Story"
+    task_artifact: "Task"
     relationships:
-      epic_story: "Epic Link"
-      story_task: "Relates"
-      epic_task: "Epic Link"
+      spec_phase: "Epic Link"
+      phase_task: "Relates"
+      spec_task: "Epic Link"
   defaults:
-    epic:
+    spec:
       labels: []
-    story:
+    phase:
       labels: []
     task:
       labels: []

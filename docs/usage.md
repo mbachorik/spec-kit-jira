@@ -88,21 +88,21 @@ This creates:
 
 ```text
 🔌 MCP Server: atlassian
-📋 Jira Project: MSATS
+📋 Jira Project: PROJ
 🔗 Issue Type: subtask
 🔗 Link Type: Relates
 
 ✅ Jira issues created successfully!
 
-Epic: MSATS-1234 - User Authentication System
-URL: https://your-instance.atlassian.net/browse/MSATS-1234
+Epic: PROJ-1234 - User Authentication System
+URL: https://your-instance.atlassian.net/browse/PROJ-1234
 
 Created 5 tasks:
-  • MSATS-1235 - Implement login endpoint
-  • MSATS-1236 - Add password hashing
-  • MSATS-1237 - Create user registration
-  • MSATS-1238 - Add JWT token generation
-  • MSATS-1239 - Write authentication tests
+  • PROJ-1235 - Implement login endpoint
+  • PROJ-1236 - Add password hashing
+  • PROJ-1237 - Create user registration
+  • PROJ-1238 - Add JWT token generation
+  • PROJ-1239 - Write authentication tests
 
 All tasks linked to epic with 'Relates' relationship
 ```
@@ -178,7 +178,7 @@ Copy the snippets to your `jira-config.yml`:
 
 ```yaml
 project:
-  key: "MSATS"
+  key: "PROJ"
 
 defaults:
   epic:
@@ -282,15 +282,15 @@ The sync-status command recognizes several completion markers:
 **Output:**
 
 ```text
-🔄 Syncing task status to Jira project: MSATS
+🔄 Syncing task status to Jira project: PROJ
 
 📝 Parsing task completion from specs/<spec-name>/tasks.md...
 📋 Loading issue mappings from specs/<spec-name>/jira-mapping.json...
 🔄 Syncing statuses...
 
-  ✓ Task 1 (MSATS-1235) - Marking as Done
-  ○ Task 2 (MSATS-1236) - In Progress
-  ✓ Task 3 (MSATS-1237) - Marking as Done
+  ✓ Task 1 (PROJ-1235) - Marking as Done
+  ○ Task 2 (PROJ-1236) - In Progress
+  ✓ Task 3 (PROJ-1237) - Marking as Done
 
 📊 Overall Progress: 2 / 3 tasks (67%)
 
